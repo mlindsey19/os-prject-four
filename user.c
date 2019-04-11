@@ -3,7 +3,7 @@
 //
 #include <stdlib.h>
 #include "user.h"
-#include "procblk.c"
+#include "panamaCityBeach.c"
 
 int main(int argc, char * argv[])
 {

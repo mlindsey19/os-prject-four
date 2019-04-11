@@ -2,12 +2,15 @@
 // Created by mlind on 4/5/2019.
 //
 
-#include "procblk.h"
+#include <sys/shm.h>
+#include <stdio.h>
+#include "panamaCityBeach.h"
 
+static int shmid;
 
 char * getPCBMem(){
     char * paddr;
-    shmid = shmget (SHMKEY2, BUFF_SZ, 0777 | IPC_CREAT);
+    shmid = shmget (SHMKEY2, BUFF_SZ2, 0777 | IPC_CREAT);
 
     if (shmid == -1)
         perror("parent - error shmid");
@@ -22,6 +25,6 @@ void deletePCBMemory(char * paddr){
 
     shmctl(shmid, IPC_RMID, NULL);
     if((er = shmdt(paddr)) == -1){
-        perror("err shmdt:");
+        perror("err shmdt pcb:");
     }
 }

@@ -26,6 +26,6 @@ void deleteClockMem( char * paddr ){
 
     shmctl(shmid, IPC_RMID, NULL);
     if( ( er = shmdt( paddr ) ) == -1 ){
-        perror("err shmdt:");
+        perror("err shmdt clock:");
     }
 }
