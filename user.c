@@ -16,6 +16,8 @@ mqd_t mq_r, mq_h, mq_m, mq_l;
 
 int main(int argc, char * argv[])
 {
+    signal(SIGPROF,( void * ) sighdl);
+
     SimClock * simClock;
     int shmidc = shmget(SHMKEY_clock,BUFF_clock, 0777);
     int shmidp = shmget(SHMKEY_pcb, BUFF_pcb, 0777);
@@ -41,16 +43,18 @@ int main(int argc, char * argv[])
         perror ("sigaction");
         return 1;
     }
+    printf("hi");
 
     sigset_t sigset;
     sigemptyset(&sigset);
     // sigaddset(&sigset, SIGUSR1);
     // sigprocmask(SIG_BLOCK, &sigset, NULL);
     int sig;
-    int result = sigwaitinfo(&sigset, &sig);
-    if(result == 0)
+    int result = sigwaitinfo(&sigset,( siginfo_t * ) &sig);
+    if( result == 0 )
         printf("sigwait got signal: %d\n", sig);
 
+    printf("hi - after sigwait");
 
     exit(808);
 }

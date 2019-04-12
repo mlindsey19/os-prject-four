@@ -84,7 +84,7 @@ int main(int argc, char ** argv) {
     increment( simClock );
 
 
-    for (total = 0 ; total < processLimit ; ) {
+   // for (total = 0 ; total < processLimit ; ) {
 
         if ( ( pids[ total ] = fork() ) < 0 ) {
             perror("error forking new process");
@@ -96,12 +96,13 @@ int main(int argc, char ** argv) {
 
         assignPCB( &pcb[ total ],  total  );
         total++, active++;
+        sleep(1);
         sigqueue(pids[0], SIGCONT, (union sigval) 0);
         if( active >= activeLimit )
             sigChild();
-    }
+    //}
 
-    while( ( total < processLimit ) && ( active != 0 ) );
+    //while( ( total < processLimit ) && ( active != 0 ) );
 
     cleanSHM();
 
