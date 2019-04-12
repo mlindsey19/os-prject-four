@@ -10,7 +10,7 @@ static int shmid;
 
 char * getPCBMem(){
     char * paddr;
-    shmid = shmget (SHMKEY2, BUFF_SZ2, 0777 | IPC_CREAT);
+    shmid = shmget (SHMKEY_pcb, BUFF_pcb, 0777 | IPC_CREAT);
 
     if (shmid == -1)
         perror("parent - error shmid");

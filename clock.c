@@ -11,7 +11,7 @@ static int shmid;
 
 char * getClockMem(){
     char * paddr;
-    shmid = shmget ( SHMKEY, BUFF_SZ, 0777 | IPC_CREAT );
+    shmid = shmget ( SHMKEY_clock, BUFF_clock, 0777 | IPC_CREAT );
 
     if ( shmid == -1 )
         perror( "parent - error shmid" );

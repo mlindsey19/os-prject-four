@@ -6,7 +6,6 @@
 
 
 #include <stdio.h>
-#include <bits/signum.h>
 #include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -42,12 +41,14 @@ const int quantum = 10000;
 
 
 pid_t pids[ PLIMIT ];
+mqd_t mq_r, mq_h, mq_m, mq_l;
 
 //alarm(3);
 
 int main(int argc, char ** argv) {
     signal( SIGINT, sigHandle );
     signal( SIGALRM, sigHandle );
+
     checkArgs( output, argc, argv, &processLimit, &activeLimit );
 
     char user[] = "user";
@@ -68,10 +69,13 @@ int main(int argc, char ** argv) {
     attr.mq_maxmsg = 100;
     attr.mq_msgsize = MAX_SIZE;
     attr.mq_curmsgs = 0;
-    mqd_t mq;
     ssize_t bytes_read;
 
-    mq = mq_open(QUEUE_NAME, O_CREAT, 0755, &attr);
+    mq_r = mq_open(QUEUE_REAL, O_CREAT, 0755, &attr);
+    mq_h = mq_open(QUEUE_HIGH, O_CREAT, 0755, &attr);
+    mq_m = mq_open(QUEUE_MED, O_CREAT, 0755, &attr);
+    mq_l = mq_open(QUEUE_LOW, O_CREAT, 0755, &attr);
+
 
 
 //    if ( total == processLimit && active <= 0 )
@@ -92,7 +96,7 @@ int main(int argc, char ** argv) {
 
         assignPCB( &pcb[ total ],  total  );
         total++, active++;
-
+        sigqueue(pids[0], SIGCONT, (union sigval) 0);
         if( active >= activeLimit )
             sigChild();
     }
@@ -129,7 +133,14 @@ void sigHandle(int cc){
 void deleteMemory() {
     deleteClockMem(clockaddr);
     deletePCBMemory(pcbpaddr);
-    mq_unlink(QUEUE_NAME);
+    mq_close(mq_r);
+    mq_unlink(QUEUE_REAL);
+    mq_close(mq_h);
+    mq_unlink(QUEUE_HIGH);
+    mq_close(mq_m);
+    mq_unlink(QUEUE_MED);
+    mq_close(mq_l);
+    mq_unlink(QUEUE_LOW);
 }
 void cleanSHM(){
     int i;

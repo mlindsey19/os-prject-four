@@ -2,10 +2,10 @@
 #cs4760
 #04-05-2019
 
-CC = cc
-CFLAGS = -g -Wall
+CC = cc  
+CFLAGS = -g -Wall -lrt
 
-OBJ1 = oss.o checkargs.o clock.o procblk.o
+OBJ1 = oss.o checkargs.o clock.o panamaCityBeach.o
 OBJ2 = user.o
 
 TARGET1 = oss
