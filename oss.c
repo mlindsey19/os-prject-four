@@ -16,6 +16,8 @@
 #include "clock.h"
 #include "panamaCityBeach.h"
 #include "checkargs.h"
+#include <errno.h>
+
 
 #define BUFF_out_sz 32
 
@@ -41,7 +43,7 @@ const int quantum = 10000;
 
 
 pid_t pids[ PLIMIT ];
-mqd_t mq_r, mq_h, mq_m, mq_l;
+//mqd_t mq_r, mq_h, mq_m, mq_l;
 
 //alarm(3);
 
@@ -71,10 +73,10 @@ int main(int argc, char ** argv) {
     attr.mq_curmsgs = 0;
     ssize_t bytes_read;
 
-    mq_r = mq_open(QUEUE_REAL, O_CREAT, 0755, &attr);
-    mq_h = mq_open(QUEUE_HIGH, O_CREAT, 0755, &attr);
-    mq_m = mq_open(QUEUE_MED, O_CREAT, 0755, &attr);
-    mq_l = mq_open(QUEUE_LOW, O_CREAT, 0755, &attr);
+//    mq_r = mq_open(QUEUE_REAL, O_CREAT, 0755, &attr);
+//    mq_h = mq_open(QUEUE_HIGH, O_CREAT, 0755, &attr);
+//    mq_m = mq_open(QUEUE_MED, O_CREAT, 0755, &attr);
+//    mq_l = mq_open(QUEUE_LOW, O_CREAT, 0755, &attr);
 
 
 
@@ -84,22 +86,28 @@ int main(int argc, char ** argv) {
     increment( simClock );
 
 
-   // for (total = 0 ; total < processLimit ; ) {
+    // for (total = 0 ; total < processLimit ; ) {
 
-        if ( ( pids[ total ] = fork() ) < 0 ) {
-            perror("error forking new process");
-            return 1;
-        }
-        if ( pids[ total ] == 0 ) {
-            execl( path, user, NULL );
-        }
+    if ( ( pids[ total ] = fork() ) < 0 ) {
+        perror("error forking new process");
+        return 1;
+    }
+    if ( pids[ total ] == 0 ) {
+        execl( path, user, NULL );
+    }
 
-        assignPCB( &pcb[ total ],  total  );
-        total++, active++;
-        sleep(1);
-        sigqueue(pids[0], SIGCONT, (union sigval) 0);
-        if( active >= activeLimit )
-            sigChild();
+    assignPCB( &pcb[ total ],  total  );
+    total++, active++;
+    printf("hi fr paret - pid[0] %i\n", pids[0]);
+
+    sleep(1);
+    if (sigqueue(pids[0], SIGUSR1, (union sigval) 0) == 0 )
+        printf("sig sent");
+    else
+        perror("sig not sent: ");
+    if( active >= activeLimit )
+        sigChild();
+    sleep(4);
     //}
 
     //while( ( total < processLimit ) && ( active != 0 ) );
@@ -134,14 +142,14 @@ void sigHandle(int cc){
 void deleteMemory() {
     deleteClockMem(clockaddr);
     deletePCBMemory(pcbpaddr);
-    mq_close(mq_r);
-    mq_unlink(QUEUE_REAL);
-    mq_close(mq_h);
-    mq_unlink(QUEUE_HIGH);
-    mq_close(mq_m);
-    mq_unlink(QUEUE_MED);
-    mq_close(mq_l);
-    mq_unlink(QUEUE_LOW);
+//    mq_close(mq_r);
+//    mq_unlink(QUEUE_REAL);
+//    mq_close(mq_h);
+//    mq_unlink(QUEUE_HIGH);
+//    mq_close(mq_m);
+//    mq_unlink(QUEUE_MED);
+//    mq_close(mq_l);
+//    mq_unlink(QUEUE_LOW);
 }
 void cleanSHM(){
     int i;

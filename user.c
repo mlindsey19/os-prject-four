@@ -6,17 +6,18 @@
 #include "panamaCityBeach.c"
 #include <mqueue.h>
 #include <signal.h>
+#include <unistd.h>
 #include "string.h"
 static void sighdl(int sig, siginfo_t *siginfo, void *context);
 
 
 ProcessControlBlock * pcb;
-mqd_t mq_r, mq_h, mq_m, mq_l;
+//mqd_t mq_r, mq_h, mq_m, mq_l;
 
 
 int main(int argc, char * argv[])
 {
-    signal(SIGPROF,( void * ) sighdl);
+    printf("hi - pid %i\n", getpid());
 
     SimClock * simClock;
     int shmidc = shmget(SHMKEY_clock,BUFF_clock, 0777);
@@ -27,34 +28,31 @@ int main(int argc, char * argv[])
 
     char buffer[MAX_SIZE];
 
-    mq_r = mq_open(QUEUE_REAL, O_RDWR, 0755);
-    mq_h = mq_open(QUEUE_HIGH, O_RDWR, 0755);
-    mq_m = mq_open(QUEUE_MED, O_RDWR, 0755);
-    mq_l = mq_open(QUEUE_LOW, O_RDWR, 0755);
+//    mq_r = mq_open(QUEUE_REAL, O_RDWR, 0755);
+//    mq_h = mq_open(QUEUE_HIGH, O_RDWR, 0755);
+//    mq_m = mq_open(QUEUE_MED, O_RDWR, 0755);
+//    mq_l = mq_open(QUEUE_LOW, O_RDWR, 0755);
 
 
-    struct sigaction action;
-    memset (&action, '\0', sizeof(action));
+    struct sigaction action, oldaction;
+    memset (&action, 0, sizeof(action));
+    memset (&action, 0, sizeof(oldaction));
 
-    action.sa_sigaction = &sighdl;
+    action.sa_sigaction = sighdl;
     action.sa_flags = SA_SIGINFO;
 
-    if (sigaction(SIGCONT, &action, NULL) < 0) {
+    if (sigaction(SIGUSR1, &action, &oldaction) != 0) {
         perror ("sigaction");
         return 1;
     }
-    printf("hi");
-
-    sigset_t sigset;
-    sigemptyset(&sigset);
-    // sigaddset(&sigset, SIGUSR1);
-    // sigprocmask(SIG_BLOCK, &sigset, NULL);
+    sigset_t set;
     int sig;
-    int result = sigwaitinfo(&sigset,( siginfo_t * ) &sig);
-    if( result == 0 )
-        printf("sigwait got signal: %d\n", sig);
-
-    printf("hi - after sigwait");
+    if(sigaddset(&set, SIGUSR1) == -1) {
+        perror("Sigaddset error");
+    }
+    sigwait(&set,&sig );
+    sleep(2);
+    printf("hi - after sigwait\n");
 
     exit(808);
 }
