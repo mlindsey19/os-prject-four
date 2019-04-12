@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include "checkArgs.h"
+#include "checkargs.h"
 
 
 static void helpMenu(){
