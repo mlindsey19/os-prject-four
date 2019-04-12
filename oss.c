@@ -102,7 +102,7 @@ int main(int argc, char ** argv) {
 
     sleep(1);
     if (sigqueue(pids[0], SIGUSR1, (union sigval) 0) == 0 )
-        printf("sig sent");
+        printf("sig sent\n");
     else
         perror("sig not sent: ");
     if( active >= activeLimit )

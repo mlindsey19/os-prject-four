@@ -54,7 +54,6 @@ int main(int argc, char * argv[])
         perror("Sigaddset error");
     }
     sigwait(&set,&sig );
-    sleep(2);
     printf("hi - after sigwait\n");
 
     exit(808);
