@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include "string.h"
 static void sighdl(int sig, siginfo_t *siginfo, void *context);
-void recieveMessage();
+void receiveMessage();
 
 ProcessControlBlock * pcb;
 mqd_t mq_r, mq_h, mq_m, mq_l;
@@ -56,7 +56,7 @@ int main(int argc, char * argv[])
 
     sigwait(&set,&sig );
     printf("hi - after sigwait\n");
-    recieveMessage()
+    receiveMessage();
     exit(808);
 }
 
@@ -66,7 +66,7 @@ static void sighdl(int sig, siginfo_t *siginfo, void *context)
             (long)siginfo->si_pid, (long)siginfo->si_uid);
 }
 
-void recieveMessage() {
+void receiveMessage() {
     ssize_t bytes_read;
 
     bytes_read = mq_receive(mq_r, buffer, MAX_SIZE, NULL);

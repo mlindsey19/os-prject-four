@@ -82,7 +82,10 @@ int main(int argc, char ** argv) {
     snprintf(buffer, sizeof(buffer), "MESSAGE %d", 919);
 
     printf("CLIENT: Send message... \n");
-    mq_send(mq_r, buffer, MAX_SIZE, 0);
+   int s = mq_send(mq_r, buffer, MAX_SIZE, 0);
+   if (s != 0){
+       perror("message didnt send: ");
+   }
 
     fflush(stdout);
 
