@@ -12,15 +12,14 @@ static void sighdl(int sig, siginfo_t *siginfo, void *context);
 void receiveMessage();
 
 ProcessControlBlock * pcb;
-mqd_t mq, mq_h, mq_m, mq_l;
+mqd_t mq;
 SimClock * simClock;
 char buffer[MAX_SIZE];
+int timeQuantum;
 
 
 int main(int argc, char * argv[])
 {
-    printf("hi - pid %i\n", getpid());
-
     int shmidc = shmget(SHMKEY_clock,BUFF_clock, 0777);
     int shmidp = shmget(SHMKEY_pcb, BUFF_pcb, 0777);
     simClock =  ( shmat ( shmidc, 0, 0));
@@ -50,8 +49,6 @@ int main(int argc, char * argv[])
         perror("Sigaddset error");
     }
 
-
-
     sigwait(&set,&sig );
     printf("hi - after sigwait\n");
     receiveMessage();
@@ -67,10 +64,10 @@ static void sighdl(int sig, siginfo_t *siginfo, void *context)
 void receiveMessage() {
     ssize_t bytes_read;
 
-    bytes_read = mq_receive(mq, buffer, MAX_SIZE, 0);
+    bytes_read = mq_receive(mq,( char * ) &timeQuantum, MAX_SIZE, 0);
 
     if (bytes_read >= 0) {
-        printf("SERVER: Received message: %s\n", buffer);
+        printf("SERVER: Received message: %d\n", timeQuantum);
     } else {
         printf("SERVER: None \n");
     }

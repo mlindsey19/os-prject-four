@@ -20,13 +20,15 @@
 int errno;
 
 #define BUFF_out_sz 32
+#define QUANTUM 10000
+
 
 
 void increment( SimClock * );
 void sigChild();
 void sigHandle( int );
 void cleanSHM();
-void assignPCB( ProcessControlBlock * , int );
+void assignPCB( ProcessControlBlock * );
 
 
 unsigned int maxTimeBetweenNewProcsNS;
@@ -39,7 +41,6 @@ int total = 0;
 char * clockaddr;
 char * pcbpaddr;
 char output[BUFF_out_sz] = "input.txt";
-const int quantum = 10000;
 
 char buffer[MAX_SIZE];
 
@@ -77,14 +78,13 @@ int main(int argc, char ** argv) {
     mq = mq_open(QUEUE_NAME, O_CREAT | O_RDWR, 0777, &attr);
 
 
-    snprintf(buffer, sizeof(buffer), "MESSAGE %d", 919);
-
+    int timeQuantum;
+    timeQuantum = QUANTUM;
     printf("CLIENT: Send message... \n");
-   int s = mq_send( mq, buffer, MAX_SIZE, 0 );
-   if (s != 0){
-       perror( "message didnt send" );
-   }
-
+    int s = mq_send( mq, ( char * ) &timeQuantum, MAX_SIZE, 0 );
+    if (s != 0){
+        perror( "message didnt send" );
+    }
     fflush(stdout);
 
 //    if ( total == processLimit && active <= 0 )
@@ -103,15 +103,14 @@ int main(int argc, char ** argv) {
         execl( path, user, NULL );
     }
 
-    assignPCB( &pcb[ total ],  total  );
+    assignPCB( &pcb[ total ]  );
     total++, active++;
-    printf("hi fr paret - pid[0] %i\n", pids[0]);
 
     sleep(1);
-    if ( sigqueue(pids[0], SIGUSR1, ( union sigval ) 0) == 0 )
-        printf( "sig sent\n" );
-    else
+    if ( sigqueue(pids[0], SIGUSR1, ( union sigval ) 0) != 0 )
         perror( "sig not sent: " );
+
+
     if( active >= activeLimit )
         sigChild();
     sleep(4);
@@ -124,7 +123,7 @@ int main(int argc, char ** argv) {
 
     return 0;
 }
-void assignPCB(ProcessControlBlock * pcb, int total ){
+void assignPCB(ProcessControlBlock * pcb){
     pcb->priority = rand() % 100 < 12 ? 0 : 1;
     pcb->pid = pids[ total ];
     pcb->cpu_used.sec = 0;
@@ -151,12 +150,6 @@ void deleteMemory() {
     deletePCBMemory(pcbpaddr);
     mq_close(mq);
     mq_unlink(QUEUE_NAME);
-//    mq_close(mq_h);
-//    mq_unlink(QUEUE_HIGH);
-//    mq_close(mq_m);
-//    mq_unlink(QUEUE_MED);
-//    mq_close(mq_l);
-//    mq_unlink(QUEUE_LOW);
 }
 void cleanSHM(){
     int i;

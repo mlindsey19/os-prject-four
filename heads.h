@@ -32,7 +32,7 @@ typedef struct {
 #define QUEUE_NAME  "/a_queue"
 
 
-#define MAX_SIZE    1024
+#define MAX_SIZE    32
 
 #define MSG_STOP    "exit"
 
