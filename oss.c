@@ -41,6 +41,7 @@ char * pcbpaddr;
 char output[BUFF_out_sz] = "input.txt";
 const int quantum = 10000;
 
+char buffer[MAX_SIZE];
 
 pid_t pids[ PLIMIT ];
 mqd_t mq_r, mq_h, mq_m, mq_l;
@@ -78,7 +79,12 @@ int main(int argc, char ** argv) {
 //    mq_m = mq_open(QUEUE_MED, O_CREAT, 0755, &attr);
 //    mq_l = mq_open(QUEUE_LOW, O_CREAT, 0755, &attr);
 
+    snprintf(buffer, sizeof(buffer), "MESSAGE %d", 919);
 
+    printf("CLIENT: Send message... \n");
+    mq_send(mq_r, buffer, MAX_SIZE, 0);
+
+    fflush(stdout);
 
 //    if ( total == processLimit && active <= 0 )
 //            break;
@@ -101,10 +107,10 @@ int main(int argc, char ** argv) {
     printf("hi fr paret - pid[0] %i\n", pids[0]);
 
     sleep(1);
-    if (sigqueue(pids[0], SIGUSR1, (union sigval) 0) == 0 )
-        printf("sig sent\n");
+    if ( sigqueue(pids[0], SIGUSR1, ( union sigval ) 0) == 0 )
+        printf( "sig sent\n" );
     else
-        perror("sig not sent: ");
+        perror( "sig not sent: " );
     if( active >= activeLimit )
         sigChild();
     sleep(4);
