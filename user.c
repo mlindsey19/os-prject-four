@@ -30,7 +30,7 @@ int main(int argc, char * argv[])
     printf("pcb: %i %i\n", pcb->pid, pcb->priority);
 
 
-    mq_r = mq_open(QUEUE_REAL, O_RDWR, 0755);
+    mq_r = mq_open(QUEUE_REAL, O_RDWR, 0777);
 //    mq_h = mq_open(QUEUE_HIGH, O_RDWR, 0755);
 //    mq_m = mq_open(QUEUE_MED, O_RDWR, 0755);
 //    mq_l = mq_open(QUEUE_LOW, O_RDWR, 0755);
@@ -69,7 +69,7 @@ static void sighdl(int sig, siginfo_t *siginfo, void *context)
 void receiveMessage() {
     ssize_t bytes_read;
 
-    bytes_read = mq_receive(mq_r, buffer, MAX_SIZE, NULL);
+    bytes_read = mq_receive(mq_r, buffer, MAX_SIZE, 0);
 
     if (bytes_read >= 0) {
         printf("SERVER: Received message: %s\n", buffer);
