@@ -74,7 +74,7 @@ int main(int argc, char ** argv) {
     attr.mq_curmsgs = 0;
     ssize_t bytes_read;
 
-    mq_r = mq_open(QUEUE_REAL, O_CREAT, 0755, &attr);
+    mq_r = mq_open(QUEUE_REAL, O_CREAT | O_RDWR, 0755, &attr);
 //    mq_h = mq_open(QUEUE_HIGH, O_CREAT, 0755, &attr);
 //    mq_m = mq_open(QUEUE_MED, O_CREAT, 0755, &attr);
 //    mq_l = mq_open(QUEUE_LOW, O_CREAT, 0755, &attr);
