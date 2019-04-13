@@ -29,10 +29,8 @@ typedef struct {
 #define BUFF_pcb sizeof( ProcessControlBlock ) * 18
 
 
-#define QUEUE_REAL  "/real_queue"
-#define QUEUE_HIGH  "/high_queue"
-#define QUEUE_MED  "/med_queue"
-#define QUEUE_LOW  "/low_queue"
+#define QUEUE_NAME  "/a_queue"
+
 
 #define MAX_SIZE    1024
 

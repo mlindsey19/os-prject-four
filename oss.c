@@ -44,7 +44,7 @@ const int quantum = 10000;
 char buffer[MAX_SIZE];
 
 pid_t pids[ PLIMIT ];
-mqd_t mq_r, mq_h, mq_m, mq_l;
+mqd_t mq;
 
 //alarm(3);
 
@@ -74,17 +74,15 @@ int main(int argc, char ** argv) {
     attr.mq_curmsgs = 0;
     ssize_t bytes_read;
 
-    mq_r = mq_open(QUEUE_REAL, O_CREAT | O_RDWR, 0777, &attr);
-//    mq_h = mq_open(QUEUE_HIGH, O_CREAT, 0755, &attr);
-//    mq_m = mq_open(QUEUE_MED, O_CREAT, 0755, &attr);
-//    mq_l = mq_open(QUEUE_LOW, O_CREAT, 0755, &attr);
+    mq = mq_open(QUEUE_NAME, O_CREAT | O_RDWR, 0777, &attr);
+
 
     snprintf(buffer, sizeof(buffer), "MESSAGE %d", 919);
 
     printf("CLIENT: Send message... \n");
-   int s = mq_send(mq_r, buffer, sizeof(buffer),0);
+   int s = mq_send( mq, buffer, MAX_SIZE, 0 );
    if (s != 0){
-       perror("message didnt send");
+       perror( "message didnt send" );
    }
 
     fflush(stdout);
@@ -151,8 +149,8 @@ void sigHandle(int cc){
 void deleteMemory() {
     deleteClockMem(clockaddr);
     deletePCBMemory(pcbpaddr);
-    mq_close(mq_r);
-    mq_unlink(QUEUE_REAL);
+    mq_close(mq);
+    mq_unlink(QUEUE_NAME);
 //    mq_close(mq_h);
 //    mq_unlink(QUEUE_HIGH);
 //    mq_close(mq_m);
