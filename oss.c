@@ -69,7 +69,7 @@ int main(int argc, char ** argv) {
 
     struct mq_attr attr;
     attr.mq_flags = 0;
-    attr.mq_maxmsg = 100;
+    attr.mq_maxmsg = 10;
     attr.mq_msgsize = MAX_SIZE;
     attr.mq_curmsgs = 0;
     ssize_t bytes_read;
