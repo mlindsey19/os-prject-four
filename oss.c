@@ -337,16 +337,16 @@ void assignToQueue(pid_t pid){
     else{
         if ( pcb->last_burst_time < QUANTUM ) {
             queueArrays.highQpids[(queueCount.highQsi + queueCount.highQLen++) % NUMOFPCB] = pid;
-            printf("OSS: Put PID %u in queue 0", pid);
-        }        if ( pcb->last_burst_time < 2 * QUANTUM ) {
+            printf("OSS: Put PID %u in queue 0\n", pid);
+        }else if ( pcb->last_burst_time < 2 * QUANTUM ) {
             queueArrays.medQpids[(queueCount.medQsi + queueCount.medQLen++) % NUMOFPCB] = pid;
-            printf("OSS: Put PID %u in queue 1", pid);
-        }        if ( pcb->last_burst_time < 3 * QUANTUM ) {
+            printf("OSS: Put PID %u in queue 1\n", pid);
+        }else if ( pcb->last_burst_time < 3 * QUANTUM ) {
             queueArrays.lowQpids[(queueCount.lowQsi + queueCount.lowQLen++) % NUMOFPCB] = pid;
-            printf("OSS: Put PID %u in queue 2", pid);
-        }        else {
+            printf("OSS: Put PID %u in queue 2\n", pid);
+        }else {
             queueArrays.waitQpids[(queueCount.waitQsi + queueCount.waitQLen++) % NUMOFPCB] = pid;
-            printf("OSS: Put PID %u in queue 3", pid);
+            printf("OSS: Put PID %u in queue 3\n", pid);
         }    }
 }
 static void initQueCount(){
