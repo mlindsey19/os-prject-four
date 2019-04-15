@@ -7,19 +7,23 @@
 #include <mqueue.h>
 #include <signal.h>
 #include <unistd.h>
+#include <time.h>
 #include "string.h"
 static void sighdl(int sig, siginfo_t *siginfo, void *context);
 void receiveMessage();
+void sendMessage();
 
 ProcessControlBlock * pcb;
 mqd_t mq;
 SimClock * simClock;
 char buffer[MAX_SIZE];
-int timeQuantum;
+int slice;
 
 
 int main(int argc, char * argv[])
 {
+    srand( time( NULL ) ^ getpid() );
+
     int shmidc = shmget(SHMKEY_clock,BUFF_clock, 0777);
     int shmidp = shmget(SHMKEY_pcb, BUFF_pcb, 0777);
     simClock =  ( shmat ( shmidc, 0, 0));
@@ -50,8 +54,9 @@ int main(int argc, char * argv[])
     }
 
     sigwait(&set,&sig );
-    printf("hi - after sigwait\n");
     receiveMessage();
+
+    sendMessage();
     exit(808);
 }
 
@@ -64,12 +69,51 @@ static void sighdl(int sig, siginfo_t *siginfo, void *context)
 void receiveMessage() {
     ssize_t bytes_read;
 
-    bytes_read = mq_receive(mq,( char * ) &timeQuantum, MAX_SIZE, 0);
+    bytes_read = mq_receive(mq,( char * ) &slice, MAX_SIZE, 0);
 
     if (bytes_read >= 0) {
-        printf("SERVER: Received message: %d\n", timeQuantum);
+        printf("SERVER: Received message: %d\n", slice);
     } else {
         printf("SERVER: None \n");
     }
     fflush(stdout);
 }
+static void amendPCB(int percent){
+    int timeUsed;
+
+    timeUsed = ( 1 + percent ) * slice;
+    pcb->cpu_used.ns += timeUsed;
+
+}
+
+void sendMessage() {
+    int a,b,c,d;
+    c = d = 0;
+    a = rand() % 3;
+    b = getpid();
+    switch ( a ){
+        case 0:
+            break;
+        case 1:
+            amendPCB(99);
+            break;
+        case 2:
+            c = rand() % 5;
+            d = rand() % 1000; // wait time
+            break;
+        case 3:
+            c = rand() % 99 ; // percent of quantum used
+            d = ( 1 + c ) * slice;
+            amendPCB(c);
+            c = 0;
+            break;
+        default:;
+    }
+    sprintf(buffer, "%d %d %d %d", a, b, c, d);
+    int s = mq_send( mq, buffer, MAX_SIZE, 0 );
+    if (s != 0){
+        perror( "message didnt send" );
+    }
+    fflush(stdout);
+}
+

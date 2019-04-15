@@ -3,8 +3,6 @@
 //04-02-19
 //
 
-
-
 #include <stdio.h>
 #include <signal.h>
 #include <unistd.h>
@@ -17,22 +15,30 @@
 #include "panamaCityBeach.h"
 #include "checkargs.h"
 #include <errno.h>
+#include <time.h>
+
 int errno;
 
 #define BUFF_out_sz 32
-#define QUANTUM 10000
-
-
+#define QUANTUM 50000
+int slice;
 
 void increment( SimClock * );
 void sigChild();
 void sigHandle( int );
 void cleanSHM();
 void assignPCB( ProcessControlBlock * );
+SimClock nextProcTime();
 
+void checkWaitQueue();
+void assignToQueue();
 
-unsigned int maxTimeBetweenNewProcsNS;
-unsigned int maxTimeBetweenNewProcsSecs;
+void generateProc();
+const unsigned int maxTimeBetweenNewProcsNS = 0;
+const unsigned int maxTimeBetweenNewProcsSecs = 2;
+void sigNextProc(pid_t);
+
+void adjustSimClock(int pid, int fl, int s, int ns);
 
 int processLimit = 6;
 int activeLimit = 3;
@@ -43,11 +49,18 @@ char * pcbpaddr;
 char output[BUFF_out_sz] = "input.txt";
 
 char buffer[MAX_SIZE];
+ProcessControlBlock * pcb;
+SimClock * simClock;
+SimClock goTime;
 
 pid_t pids[ PLIMIT ];
 mqd_t mq;
-
+char user[] = "user";
+char path[] = "./user";
 //alarm(3);
+
+
+
 
 int main(int argc, char ** argv) {
     signal( SIGINT, sigHandle );
@@ -55,16 +68,11 @@ int main(int argc, char ** argv) {
 
     checkArgs( output, argc, argv, &processLimit, &activeLimit );
 
-    char user[] = "user";
-    char path[] = "./user";
-
-    SimClock * simClock;
     clockaddr = getClockMem();
     simClock = ( SimClock * ) clockaddr;
     simClock->sec = 0;
     simClock->ns = 0;
 
-    ProcessControlBlock * pcb;
     pcbpaddr = getPCBMem();
     pcb = ( ProcessControlBlock * ) pcbpaddr;
 
@@ -73,50 +81,40 @@ int main(int argc, char ** argv) {
     attr.mq_maxmsg = 10;
     attr.mq_msgsize = MAX_SIZE;
     attr.mq_curmsgs = 0;
-    ssize_t bytes_read;
 
     mq = mq_open(QUEUE_NAME, O_CREAT | O_RDWR, 0777, &attr);
 
+    SimClock gentime = nextProcTime();
+    goTime.sec = 0;
+    goTime.ns = 0;
 
-    int timeQuantum;
-    timeQuantum = QUANTUM;
-    printf("CLIENT: Send message... \n");
-    int s = mq_send( mq, ( char * ) &timeQuantum, MAX_SIZE, 0 );
-    if (s != 0){
-        perror( "message didnt send" );
+    while (1){
+
+
+        slice = QUANTUM;
+
+        increment( simClock );
+        checkWaitQueue();
+        assignToQueue();
+
+        if ( simClock->sec > gentime.sec ||
+            ( simClock->sec >= gentime.sec && simClock->ns > gentime.ns ) )
+            generateProc();
+
+        // for (total = 0 ; total < processLimit ; ) {
+        pid_t npid;
+        if ( simClock->sec > goTime.sec ||
+            ( simClock->sec >= goTime.sec && simClock->ns > goTime.ns ) ) {
+
+
+            sigNextProc(npid);
+        }
+        if( active >= activeLimit )
+            sigChild();
+        if ( total == processLimit && active <= 0 )
+            break;
     }
-    fflush(stdout);
 
-//    if ( total == processLimit && active <= 0 )
-//            break;
-
-    increment( simClock );
-
-
-    // for (total = 0 ; total < processLimit ; ) {
-
-    if ( ( pids[ total ] = fork() ) < 0 ) {
-        perror("error forking new process");
-        return 1;
-    }
-    if ( pids[ total ] == 0 ) {
-        execl( path, user, NULL );
-    }
-
-    assignPCB( &pcb[ total ]  );
-    total++, active++;
-
-    sleep(1);
-    if ( sigqueue(pids[0], SIGUSR1, ( union sigval ) 0) != 0 )
-        perror( "sig not sent: " );
-
-
-    if( active >= activeLimit )
-        sigChild();
-    sleep(4);
-    //}
-
-    //while( ( total < processLimit ) && ( active != 0 ) );
 
     cleanSHM();
 
@@ -128,12 +126,15 @@ void assignPCB(ProcessControlBlock * pcb){
     pcb->pid = pids[ total ];
     pcb->cpu_used.sec = 0;
     pcb->cpu_used.ns = 0;
-    pcb->sys_time.sec = 0;
-    pcb->sys_time.ns = 0;
+    pcb->sys_time_begin.sec = simClock->sec;
+    pcb->sys_time_begin.ns = simClock->ns;
+    pcb->sys_time_end.sec = 0;
+    pcb->sys_time_end.ns =0;
 }
 
 void increment(SimClock * simClock){
-    simClock->sec++;
+    srand( time( NULL ) ^ getpid() );
+    //simClock->sec++;
     simClock->ns += rand() % 1000;
     if (simClock->ns > secWorthNancSec ){
         simClock->sec++;
@@ -179,5 +180,62 @@ void sigChild() {
     }
 }
 
+int receiveMessage() {
+    ssize_t bytes_read;
+    int pid, fl, s, ns;
+    bytes_read = mq_receive( mq,( char * ) &slice, MAX_SIZE, 0 );
+    if (bytes_read >= 0) {
+        printf("SERVER: Received message: %s\n", buffer);
+        sscanf(buffer, "%d %d %d %d", &pid, &fl, &s, &ns );
+        adjustSimClock(pid,fl, s , ns);
+    } else
+        printf("SERVER: None \n");
+    fflush(stdout);
+}
+
+void adjustSimClock(int pid, int fl, int s, int ns) {
+    switch ( fl ){
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        default:
+            ;
+    }
+}
+
+void sendMessage() {
+    int s = mq_send( mq, ( char * ) &slice, MAX_SIZE, 0 );
+    if (s != 0)
+        perror( "message didnt send" );
+    fflush(stdout);
+}
+
+SimClock nextProcTime(){
+    int ss = maxTimeBetweenNewProcsSecs * secWorthNancSec + maxTimeBetweenNewProcsNS;
+    SimClock x;
+    int dx = ( rand() % ss ) + total;
+    x.sec = dx / secWorthNancSec;
+    x.ns = dx % secWorthNancSec;
+    return x;
+}
+void generateProc() {
+    if ((pids[total] = fork()) < 0)
+        perror("error forking new process");
+    if (pids[total] == 0)
+        execl(path, user, NULL);
+    assignPCB( &pcb[ total++ ] );
+    active++;
+}
+void sigNextProc(pid_t npid){
+    if ( sigqueue( npid, SIGUSR1, ( union sigval ) 0 ) != 0 )
+        perror( "sig not sent: " );
+}
 
 
+void checkWaitQueue(){
+
+}
+void assignToQueue(){
+
+}
