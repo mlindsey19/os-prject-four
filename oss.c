@@ -29,6 +29,8 @@ void sigHandle( int );
 void cleanSHM();
 void assignPCB( ProcessControlBlock * );
 SimClock nextProcTime();
+void receiveMessage();
+void sendMessage();
 
 void checkWaitQueue();
 void assignToQueue(pid_t);
@@ -41,7 +43,7 @@ const unsigned int maxTimeBetweenNewProcsSecs = 2;
 void sigNextProc(pid_t);
 
 void processMessage(int pid, int fl, int s, int ns);
-
+int getNext();
 int processLimit = 6;
 int activeLimit = 3;
 int active = 0;
@@ -98,7 +100,6 @@ int main(int argc, char ** argv) {
 
         increment( simClock );
         checkWaitQueue();
-        assignToQueue();
 
         if ( simClock->sec > gentime.sec ||
              ( simClock->sec >= gentime.sec && simClock->ns > gentime.ns ) )
@@ -109,8 +110,10 @@ int main(int argc, char ** argv) {
         if ( simClock->sec > goTime.sec ||
              ( simClock->sec >= goTime.sec && simClock->ns > goTime.ns ) ) {
 
-
+            npid= getNext();
+            sendMessage();
             sigNextProc(npid);
+            receiveMessage();
         }
         if( active >= activeLimit )
             sigChild();
@@ -122,6 +125,25 @@ int main(int argc, char ** argv) {
     cleanSHM();
 
 
+    return 0;
+}
+int getNext(){
+    if ( ( queueCount.realQLen - queueCount.realQsi ) > 0 ){
+        slice = QUANTUM;
+        return queueArrays.realQpids[queueCount.realQsi++];
+    }
+    if ( ( queueCount.highQLen - queueCount.highQsi ) > 0 ){
+        slice = 2 * QUANTUM;
+        return queueArrays.highQpids[queueCount.highQsi++];
+    }
+    if ( ( queueCount.medQLen - queueCount.medQsi ) > 0 ){
+        slice = 3 * QUANTUM;
+        return queueArrays.medQpids[queueCount.medQsi++];
+    }
+    if ( ( queueCount.lowQLen - queueCount.lowQsi ) > 0 ){
+        slice = 4 * QUANTUM;
+        return queueArrays.lowQpids[queueCount.lowQsi++];
+    }
     return 0;
 }
 void assignPCB(ProcessControlBlock * pcb){
@@ -185,7 +207,7 @@ void sigChild() {
     }
 }
 
-int receiveMessage() {
+void receiveMessage() {
     ssize_t bytes_read;
     int pid, fl, s, ns;
     bytes_read = mq_receive( mq,( char * ) &slice, MAX_SIZE, 0 );
