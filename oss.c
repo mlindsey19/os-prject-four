@@ -90,8 +90,8 @@ int main(int argc, char ** argv) {
     mq = mq_open(QUEUE_NAME, O_CREAT | O_RDWR, 0777, &attr);
 
     SimClock gentime = nextProcTime();
-    goTime.sec = 2;
-    goTime.ns = 533323;
+    goTime.sec = 0;
+    goTime.ns = 0;
     int k=0;
     while (1){
 
@@ -106,8 +106,9 @@ int main(int argc, char ** argv) {
         // for (total = 0 ; total < processLimit ; ) {
         pid_t npid;
         if ( simClock->sec > goTime.sec ||
-             ( simClock->sec >= goTime.sec && simClock->ns > goTime.ns ) ) {
-
+             ( simClock->sec >= goTime.sec && simClock->ns >= goTime.ns ) ) {
+            goTime.sec =simClock->sec;
+            goTime.ns =simClock->ns;
             npid= getNext();
             if(npid == 0)
                 continue;
@@ -131,19 +132,19 @@ int main(int argc, char ** argv) {
 int getNext(){
     if ( ( queueCount.realQLen - queueCount.realQsi ) > 0 ){
         slice = QUANTUM;
-        return queueArrays.realQpids[queueCount.realQsi++];
+        return queueArrays.realQpids[ queueCount.realQsi++ % NUMOFPCB ];
     }
     if ( ( queueCount.highQLen - queueCount.highQsi ) > 0 ){
         slice = 2 * QUANTUM;
-        return queueArrays.highQpids[queueCount.highQsi++];
+        return queueArrays.highQpids[ queueCount.highQsi++ % NUMOFPCB ];
     }
     if ( ( queueCount.medQLen - queueCount.medQsi ) > 0 ){
-        slice = 3 * QUANTUM;
-        return queueArrays.medQpids[queueCount.medQsi++];
+        slice = 4 * QUANTUM;
+        return queueArrays.medQpids[ queueCount.medQsi++ % NUMOFPCB ];
     }
     if ( ( queueCount.lowQLen - queueCount.lowQsi ) > 0 ){
-        slice = 4 * QUANTUM;
-        return queueArrays.lowQpids[queueCount.lowQsi++];
+        slice = 8 * QUANTUM;
+        return queueArrays.lowQpids[ queueCount.lowQsi++ % NUMOFPCB ];
     }
     return 0;
 }
@@ -332,21 +333,23 @@ void checkWaitQueue(){
 }
 void assignToQueue(pid_t pid){
 
-    if( pcb[total].priority == 0 )
-        queueArrays.realQpids[ ( queueCount.realQsi + queueCount.realQLen++ ) % NUMOFPCB ] = pid;
+    if( pcb[total].priority == 0 ) {
+        queueArrays.realQpids[(queueCount.realQsi + queueCount.realQLen++) % NUMOFPCB] = pid;
+        printf("OSS: Put PID %u in queue 0\n", pid);
+    }
     else{
-        if ( pcb->last_burst_time < QUANTUM ) {
+        if ( pcb->last_burst_time < 2 * QUANTUM ) {
             queueArrays.highQpids[(queueCount.highQsi + queueCount.highQLen++) % NUMOFPCB] = pid;
-            printf("OSS: Put PID %u in queue 0\n", pid);
-        }else if ( pcb->last_burst_time < 2 * QUANTUM ) {
-            queueArrays.medQpids[(queueCount.medQsi + queueCount.medQLen++) % NUMOFPCB] = pid;
             printf("OSS: Put PID %u in queue 1\n", pid);
-        }else if ( pcb->last_burst_time < 3 * QUANTUM ) {
-            queueArrays.lowQpids[(queueCount.lowQsi + queueCount.lowQLen++) % NUMOFPCB] = pid;
+        }else if ( pcb->last_burst_time < 4 * QUANTUM ) {
+            queueArrays.medQpids[(queueCount.medQsi + queueCount.medQLen++) % NUMOFPCB] = pid;
             printf("OSS: Put PID %u in queue 2\n", pid);
+        }else if ( pcb->last_burst_time < 8 * QUANTUM ) {
+            queueArrays.lowQpids[(queueCount.lowQsi + queueCount.lowQLen++) % NUMOFPCB] = pid;
+            printf("OSS: Put PID %u in queue 3\n", pid);
         }else {
             queueArrays.waitQpids[(queueCount.waitQsi + queueCount.waitQLen++) % NUMOFPCB] = pid;
-            printf("OSS: Put PID %u in queue 3\n", pid);
+            printf("OSS: Put PID %u in queue wait\n", pid);
         }    }
 }
 static void initQueCount(){
