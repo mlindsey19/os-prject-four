@@ -18,7 +18,7 @@ mqd_t mq;
 SimClock * simClock;
 char buffer[MAX_SIZE];
 int slice;
-
+int ex;
 
 int main(int argc, char * argv[])
 {
@@ -29,15 +29,8 @@ int main(int argc, char * argv[])
     simClock =  ( shmat ( shmidc, 0, 0));
     pcb =  ( shmat ( shmidp, 0, 0));
 
-    printf("sim clock: %i %i\n", simClock->sec, simClock->ns);
-    printf("pcb: %i %i\n", pcb->pid, pcb->priority);
-
 
     mq = mq_open(QUEUE_NAME, O_RDWR, 0777);
-
-
-
-
 
     struct sigaction action;
     memset (&action, 0, sizeof(action));
@@ -52,12 +45,14 @@ int main(int argc, char * argv[])
     if(sigaddset(&set, SIGUSR1) == -1) {
         perror("Sigaddset error");
     }
-
-    sigwait(&set,&sig );
-    receiveMessage();
-
-    sendMessage();
+    ex = 0;
+    while(!ex) {
+        sigwait(&set, &sig);
+        receiveMessage();
+        sendMessage();
+    }
     exit(808);
+
 }
 
 static void sighdl(int sig, siginfo_t *siginfo, void *context)
@@ -72,9 +67,9 @@ void receiveMessage() {
     bytes_read = mq_receive(mq,( char * ) &slice, MAX_SIZE, 0);
 
     if (bytes_read >= 0) {
-        printf("SERVER: Received message: %d\n", slice);
+        printf("child %u: Received slice: %d\n",getpid(), slice);
     } else {
-        printf("SERVER: None \n");
+        printf("child %u: no message \n", getpid());
     }
     fflush(stdout);
 }
@@ -94,6 +89,7 @@ void sendMessage() {
     b = getpid();
     switch ( a ){
         case 0:
+            exit = 1;
             break;
         case 1:
             amendPCB(99);

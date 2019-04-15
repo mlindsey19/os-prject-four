@@ -201,7 +201,7 @@ void sigChild() {
             if (WIFEXITED(status) && WEXITSTATUS(status) == 808 && pid != 0 ) {
                 pids[i] = 0;
                 printf( "term pid:%u\n", pid );
-                active--;
+              //  active--;
             }
         }
     }
@@ -268,6 +268,7 @@ void aggregateStats( pid_t pid ){
         if ( pid == pcb[i].pid )
             bitv[ i ] = 0;
     }
+    active--;
     //do something with stats
 
 }
@@ -330,15 +331,19 @@ void assignToQueue(pid_t pid){
     if( pcb[total].priority == 0 )
         queueArrays.realQpids[ ( queueCount.realQsi + queueCount.realQLen++ ) % NUMOFPCB ] = pid;
     else{
-        if ( pcb->last_burst_time < QUANTUM )
-            queueArrays.highQpids[ ( queueCount.highQsi + queueCount.highQLen++ ) % NUMOFPCB ] = pid;
-        if ( pcb->last_burst_time < 2 * QUANTUM )
-            queueArrays.medQpids[ ( queueCount.medQsi + queueCount.medQLen++ ) % NUMOFPCB ] = pid;
-        if ( pcb->last_burst_time < 3 * QUANTUM )
-            queueArrays.lowQpids[ ( queueCount.lowQsi + queueCount.lowQLen++ ) % NUMOFPCB ] = pid;
-        else
-            queueArrays.waitQpids[ ( queueCount.waitQsi + queueCount.waitQLen++ ) % NUMOFPCB ] = pid;
-    }
+        if ( pcb->last_burst_time < QUANTUM ) {
+            queueArrays.highQpids[(queueCount.highQsi + queueCount.highQLen++) % NUMOFPCB] = pid;
+                printf("OSS: Put PID %u in queue 0", pid);
+        }        if ( pcb->last_burst_time < 2 * QUANTUM ) {
+            queueArrays.medQpids[(queueCount.medQsi + queueCount.medQLen++) % NUMOFPCB] = pid;
+                printf("OSS: Put PID %u in queue 1", pid);
+        }        if ( pcb->last_burst_time < 3 * QUANTUM ) {
+            queueArrays.lowQpids[(queueCount.lowQsi + queueCount.lowQLen++) % NUMOFPCB] = pid;
+                printf("OSS: Put PID %u in queue 2", pid);
+        }        else {
+            queueArrays.waitQpids[(queueCount.waitQsi + queueCount.waitQLen++) % NUMOFPCB] = pid;
+                printf("OSS: Put PID %u in queue 3", pid);
+        }    }
 }
 static void initQueCount(){
     queueCount.highQLen = 0;
