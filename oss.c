@@ -107,9 +107,9 @@ int main(int argc, char ** argv) {
         pid_t npid;
         if ( simClock->sec > goTime.sec ||
              ( simClock->sec >= goTime.sec && simClock->ns >= goTime.ns ) ) {
-            goTime.sec =simClock->sec;
-            goTime.ns =simClock->ns;
-            npid= getNext();
+            goTime.sec = simClock->sec;
+            goTime.ns = simClock->ns;
+            npid = getNext();
             if(npid == 0)
                 continue;
             sendMessage();
@@ -164,7 +164,7 @@ void assignPCB(ProcessControlBlock * pcb){
 void increment(SimClock * simClock){
     srand( time( NULL ) ^ getpid() );
     //simClock->sec++;
-    simClock->ns += rand() % 10000;
+    simClock->ns += rand() % 100000;
     if (simClock->ns > secWorthNancSec ){
         simClock->sec++;
         simClock->ns -= secWorthNancSec;
@@ -324,6 +324,8 @@ void sigNextProc(pid_t npid){
 
 
 void checkWaitQueue(){
+   if ( ( queueCount.waitQLen - queueCount.waitQsi ) == 0)
+       return;
     int i ;
     for(i =0; i < NUMOFPCB;i++)
         if (queueArrays.waitQpids[i] > 0){
