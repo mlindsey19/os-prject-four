@@ -23,6 +23,7 @@ typedef struct {
     SimClock cpu_used;
     SimClock sys_time_begin;
     SimClock sys_time_end;
+    SimClock waitingTill;
     unsigned int last_burst_time;
 
 }ProcessControlBlock;

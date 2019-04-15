@@ -82,6 +82,7 @@ static void amendPCB(int percent){
     int timeUsed;
 
     timeUsed = ( 1 + percent ) * slice;
+    pcb->last_burst_time = timeUsed;
     pcb->cpu_used.ns += timeUsed;
 
 }
@@ -100,6 +101,8 @@ void sendMessage() {
         case 2:
             c = rand() % 5;
             d = rand() % 1000; // wait time
+            pcb->waitingTill.sec = c + simClock->sec;
+            pcb->waitingTill.ns = d + simClock->ns;
             break;
         case 3:
             c = rand() % 99 ; // percent of quantum used
