@@ -34,7 +34,7 @@ void sendMessage();
 
 void checkWaitQueue();
 void assignToQueue(pid_t);
-void aggregateStats();
+void aggregateStats(pid_t);
 void dispatchTime();
 void addTogotime(int ,int );
 void generateProc();
@@ -90,9 +90,9 @@ int main(int argc, char ** argv) {
     mq = mq_open(QUEUE_NAME, O_CREAT | O_RDWR, 0777, &attr);
 
     SimClock gentime = nextProcTime();
-    goTime.sec = 0;
-    goTime.ns = 0;
-
+    goTime.sec = 2;
+    goTime.ns = 533323;
+int k=0;
     while (1){
 
         slice = QUANTUM;
@@ -110,6 +110,8 @@ int main(int argc, char ** argv) {
              ( simClock->sec >= goTime.sec && simClock->ns > goTime.ns ) ) {
 
             npid= getNext();
+            if(npid == 0)
+                continue;
             sendMessage();
             sigNextProc(npid);
             sleep(1);
