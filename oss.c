@@ -331,24 +331,33 @@ void checkWaitQueue(){
             }
         }
 }
-void assignToQueue(pid_t pid){
+void assignToQueue(pid_t pid) {
+    int i, j;
+    for (i = 0, j = -1; i < NUMOFPCB; i++) {
+        if (pcb[i].pid == pid)
+            j = i;
+    }
+    if (j < 0) {
+        printf("OSS: pid did not match any in table");
+        return;
+    }
 
-    if( pcb[total].priority == 0 ) {
-        queueArrays.realQpids[(queueCount.realQsi + queueCount.realQLen++) % NUMOFPCB] = pid;
+    if( pcb[j].priority == 0 ) {
+        queueArrays.realQpids[ ( queueCount.realQsi + queueCount.realQLen++ ) % NUMOFPCB] = pid;
         printf("OSS: Put PID %u in queue 0\n", pid);
     }
     else{
-        if ( pcb->last_burst_time < 2 * QUANTUM ) {
-            queueArrays.highQpids[(queueCount.highQsi + queueCount.highQLen++) % NUMOFPCB] = pid;
+        if ( pcb[j].last_burst_time < ( 2 * QUANTUM ) ) {
+            queueArrays.highQpids[ ( queueCount.highQsi + queueCount.highQLen++ ) % NUMOFPCB ] = pid;
             printf("OSS: Put PID %u in queue 1\n", pid);
-        }else if ( pcb->last_burst_time < 4 * QUANTUM ) {
-            queueArrays.medQpids[(queueCount.medQsi + queueCount.medQLen++) % NUMOFPCB] = pid;
+        }else if ( pcb[j].last_burst_time < ( 4 * QUANTUM ) ) {
+            queueArrays.medQpids[ ( queueCount.medQsi + queueCount.medQLen++ ) % NUMOFPCB] = pid;
             printf("OSS: Put PID %u in queue 2\n", pid);
-        }else if ( pcb->last_burst_time < 8 * QUANTUM ) {
-            queueArrays.lowQpids[(queueCount.lowQsi + queueCount.lowQLen++) % NUMOFPCB] = pid;
+        }else if ( pcb[j].last_burst_time < ( 8 * QUANTUM ) ) {
+            queueArrays.lowQpids[ ( queueCount.lowQsi + queueCount.lowQLen++ ) % NUMOFPCB] = pid;
             printf("OSS: Put PID %u in queue 3\n", pid);
         }else {
-            queueArrays.waitQpids[(queueCount.waitQsi + queueCount.waitQLen++) % NUMOFPCB] = pid;
+            queueArrays.waitQpids[ ( queueCount.waitQsi + queueCount.waitQLen++ ) % NUMOFPCB] = pid;
             printf("OSS: Put PID %u in queue wait\n", pid);
         }    }
 }
