@@ -109,7 +109,7 @@ void sendMessage() {
             break;
         default:;
     }
-    sprintf(buffer, "%d %d %d %d", a, b, c, d);
+    sprintf(buffer, "%i %i %i %i", a, b, c, d);
     int s = mq_send( mq, buffer, MAX_SIZE, 0 );
     if (s != 0){
         perror( "message didnt send" );

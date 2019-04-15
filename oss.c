@@ -36,7 +36,7 @@ void checkWaitQueue();
 void assignToQueue(pid_t);
 void aggregateStats(pid_t);
 void dispatchTime();
-void addTogotime(int ,int );
+void addToGoTime(int, int);
 void generateProc();
 const unsigned int maxTimeBetweenNewProcsNS = 0;
 const unsigned int maxTimeBetweenNewProcsSecs = 2;
@@ -215,11 +215,11 @@ void receiveMessage() {
     int pid, fl, s, ns;
     bytes_read = mq_receive( mq,( char * ) &slice, MAX_SIZE, 0 );
     if (bytes_read >= 0) {
-        printf("SERVER: Received message: %s\n", buffer);
-        sscanf(buffer, "%d %d %d %d", &pid, &fl, &s, &ns );
+        printf("OSS: Received message -> %s\n", buffer);
+        sscanf(buffer, "%i %i %i %i", &pid, &fl, &s, &ns );
         processMessage(pid, fl, s, ns);
     } else
-        printf("SERVER: None \n");
+        printf("OSS: No message \n");
     fflush(stdout);
 }
 
@@ -231,7 +231,7 @@ void processMessage(int pid, int fl, int s, int ns) {
             break;
         case 1:
             dispatchTime();
-            addTogotime(s,ns);
+            addToGoTime(s, ns);
             assignToQueue(pid);
             printf("OSS: Received pid: %u used %is %ins. \n", pid, s, ns );
             break;
@@ -241,7 +241,7 @@ void processMessage(int pid, int fl, int s, int ns) {
         case 3:
             printf("OSS: Received pid: %u preempted after %is %ins. \n", pid, s, ns );
             dispatchTime();
-            addTogotime(s,ns);
+            addToGoTime(s, ns);
             assignToQueue(pid);
             break;
         default:
@@ -257,7 +257,7 @@ void dispatchTime() {
         goTime.ns -= secWorthNancSec;
     }
 }
-void addTogotime(int s, int ns){
+void addToGoTime(int s, int ns){
     goTime.ns += ns;
     goTime.sec += s;
     if (goTime.ns > secWorthNancSec ){
