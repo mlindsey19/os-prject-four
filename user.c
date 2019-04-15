@@ -89,7 +89,7 @@ void sendMessage() {
     b = getpid();
     switch ( a ){
         case 0:
-            exit = 1;
+            ex = 1;
             break;
         case 1:
             amendPCB(99);

@@ -52,7 +52,6 @@ char * clockaddr;
 char * pcbpaddr;
 char output[BUFF_out_sz] = "input.txt";
 
-char buffer[MAX_SIZE];
 ProcessControlBlock * pcb;
 SimClock * simClock;
 SimClock goTime;
@@ -209,6 +208,7 @@ void sigChild() {
 
 void receiveMessage() {
     ssize_t bytes_read;
+    char buffer[MAX_SIZE];
     int pid, fl, s, ns;
     bytes_read = mq_receive( mq,( char * ) &slice, MAX_SIZE, 0 );
     if (bytes_read >= 0) {
