@@ -51,7 +51,7 @@ int total = 0;
 char * clockaddr;
 char * pcbpaddr;
 char output[BUFF_out_sz] = "input.txt";
-
+SimClock gentime;
 ProcessControlBlock * pcb;
 SimClock * simClock;
 SimClock goTime;
@@ -89,7 +89,7 @@ int main(int argc, char ** argv) {
 
     mq = mq_open(QUEUE_NAME, O_CREAT | O_RDWR, 0777, &attr);
 
-    SimClock gentime = nextProcTime();
+     gentime = nextProcTime();
     goTime.sec = 0;
     goTime.ns = 0;
     int k=0;
@@ -286,9 +286,14 @@ void sendMessage() {
 SimClock nextProcTime(){
     int ss = maxTimeBetweenNewProcsSecs * secWorthNancSec + maxTimeBetweenNewProcsNS;
     SimClock x;
-    int dx = ( rand() % ss ) + ( total * secWorthNancSec );
-    x.sec = dx / secWorthNancSec;
-    x.ns = dx % secWorthNancSec;
+    int dx = ( rand() % ss ) ;
+    x.sec = ( dx / secWorthNancSec ) + gentime.sec;
+    x.ns = ( dx % secWorthNancSec ) + gentime.ns;
+    if (x.ns > secWorthNancSec ){
+        x.sec++;
+        x.ns -= secWorthNancSec;
+        assert( x.ns <= secWorthNancSec && "x - too many nanoseconds");
+    }
     printf("OSS: process index %i may generate after %is %ins\n",total, x.sec, x.ns);
     return x;
 }
