@@ -112,6 +112,7 @@ int main(int argc, char ** argv) {
             npid= getNext();
             sendMessage();
             sigNextProc(npid);
+            sleep(1);
             receiveMessage();
         }
         if( active >= activeLimit )
