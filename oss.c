@@ -92,18 +92,17 @@ int main(int argc, char ** argv) {
     SimClock gentime = nextProcTime();
     goTime.sec = 2;
     goTime.ns = 533323;
-int k=0;
+    int k=0;
     while (1){
-
-        slice = QUANTUM;
 
         increment( simClock );
         checkWaitQueue();
 
         if ( simClock->sec > gentime.sec ||
-             ( simClock->sec >= gentime.sec && simClock->ns > gentime.ns ) )
+             ( simClock->sec >= gentime.sec && simClock->ns > gentime.ns ) ) {
             generateProc();
-
+            gentime = nextProcTime();
+        }
         // for (total = 0 ; total < processLimit ; ) {
         pid_t npid;
         if ( simClock->sec > goTime.sec ||
@@ -156,9 +155,9 @@ void assignPCB(ProcessControlBlock * pcb){
     pcb->sys_time_begin.sec = simClock->sec;
     pcb->sys_time_begin.ns = simClock->ns;
     pcb->sys_time_end.sec = 0;
-    pcb->sys_time_end.ns =0;
-    pcb->waitingTill.ns=0;
-    pcb->waitingTill.sec=0;
+    pcb->sys_time_end.ns = 0;
+    pcb->waitingTill.ns = 0;
+    pcb->waitingTill.sec = 0;
 }
 
 void increment(SimClock * simClock){
@@ -203,7 +202,7 @@ void sigChild() {
             if (WIFEXITED(status) && WEXITSTATUS(status) == 808 && pid != 0 ) {
                 pids[i] = 0;
                 printf( "term pid:%u\n", pid );
-              //  active--;
+                //  active--;
             }
         }
     }
@@ -279,7 +278,7 @@ void aggregateStats( pid_t pid ){
 void sendMessage() {
     int s = mq_send( mq, ( char * ) &slice, MAX_SIZE, 0 );
     if (s != 0)
-        perror( "message didnt send" );
+        perror( "Parent - message didnt send" );
     fflush(stdout);
 }
 
@@ -289,6 +288,7 @@ SimClock nextProcTime(){
     int dx = ( rand() % ss ) + total;
     x.sec = dx / secWorthNancSec;
     x.ns = dx % secWorthNancSec;
+    printf("OSS: process index %i may generate after %is %ins\n",total, x.sec, x.ns);
     return x;
 }
 void generateProc() {
@@ -301,6 +301,7 @@ void generateProc() {
     for(i=0; i< NUMOFPCB;i++) {
         if (bitv[i] == 0) {
             j = i;
+            bitv[ i ] = 1;
             break;
         }
     }
@@ -336,16 +337,16 @@ void assignToQueue(pid_t pid){
     else{
         if ( pcb->last_burst_time < QUANTUM ) {
             queueArrays.highQpids[(queueCount.highQsi + queueCount.highQLen++) % NUMOFPCB] = pid;
-                printf("OSS: Put PID %u in queue 0", pid);
+            printf("OSS: Put PID %u in queue 0", pid);
         }        if ( pcb->last_burst_time < 2 * QUANTUM ) {
             queueArrays.medQpids[(queueCount.medQsi + queueCount.medQLen++) % NUMOFPCB] = pid;
-                printf("OSS: Put PID %u in queue 1", pid);
+            printf("OSS: Put PID %u in queue 1", pid);
         }        if ( pcb->last_burst_time < 3 * QUANTUM ) {
             queueArrays.lowQpids[(queueCount.lowQsi + queueCount.lowQLen++) % NUMOFPCB] = pid;
-                printf("OSS: Put PID %u in queue 2", pid);
+            printf("OSS: Put PID %u in queue 2", pid);
         }        else {
             queueArrays.waitQpids[(queueCount.waitQsi + queueCount.waitQLen++) % NUMOFPCB] = pid;
-                printf("OSS: Put PID %u in queue 3", pid);
+            printf("OSS: Put PID %u in queue 3", pid);
         }    }
 }
 static void initQueCount(){

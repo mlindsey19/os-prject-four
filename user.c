@@ -51,8 +51,9 @@ int main(int argc, char * argv[])
         receiveMessage();
         sendMessage();
     }
+    pcb->sys_time_end.sec = simClock->sec;
+    pcb->sys_time_end.ns = simClock->ns;
     exit(808);
-
 }
 
 static void sighdl(int sig, siginfo_t *siginfo, void *context)
