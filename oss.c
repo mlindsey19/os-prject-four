@@ -286,7 +286,7 @@ void sendMessage() {
 SimClock nextProcTime(){
     int ss = maxTimeBetweenNewProcsSecs * secWorthNancSec + maxTimeBetweenNewProcsNS;
     SimClock x;
-    int dx = ( rand() % ss ) + total;
+    int dx = ( rand() % ss ) + ( total * secWorthNancSec );
     x.sec = dx / secWorthNancSec;
     x.ns = dx % secWorthNancSec;
     printf("OSS: process index %i may generate after %is %ins\n",total, x.sec, x.ns);
