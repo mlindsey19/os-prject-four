@@ -139,10 +139,11 @@ int main(int argc, char ** argv) {
         }
         if ( simClock->sec > goTime.sec ||
              ( simClock->sec >= goTime.sec && simClock->ns >= goTime.ns ) ) {
+            slice = QUANTUM;
             sendMessage();
             usleep(1000);
             sigNextProc(getNext());
-            usleep(1000);
+            usleep(100000);
             receiveMessage();
             k=0;
         }
