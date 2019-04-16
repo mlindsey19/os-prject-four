@@ -55,7 +55,7 @@ typedef struct {
 
 #define MAX_SIZE 128
 
-#define MSG_STOP  "exit"
+#define MSG_STOP "exit"
 
 
 #endif //PROJECT_FOUR_HEADS_H

@@ -139,14 +139,16 @@ int main(int argc, char ** argv) {
         if (a == 0) {
             generateProc();
             a++;
-            goTime.sec = simClock->sec;
-            goTime.ns = simClock->ns;
-            dispatchTime();
         }
-        if ( simClock->sec > goTime.sec ||
-             ( simClock->sec >= goTime.sec && simClock->ns >= goTime.ns ) ) {
-            sigNextProc( getNext() );
+//        if ( simClock->sec > goTime.sec ||
+//             ( simClock->sec >= goTime.sec && simClock->ns >= goTime.ns ) ) {
+
+            pid_t npid ;
+        npid = getNext();
+        if( npid < 0 ){
             sendMessage();
+            sleep( 1 );
+            sigNextProc( npid );
             receiveMessage();
             k++;
         }
@@ -176,7 +178,7 @@ static int getNext(){
         slice = 8 * QUANTUM;
         return queueArrays.lowQpids[ queueCount.lowQsi++ % NUMOFPCB ];
     }
-    return 0;
+    return -1;
 }
 static void assignPCB(){
     pcb->priority = rand() % 100 < 12 ? 0 : 1;

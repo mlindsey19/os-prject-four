@@ -71,7 +71,6 @@ static void receiveMessage() {
     ssize_t bytes_read;
 
     bytes_read = mq_receive(mq_a,( char * ) &slice, MAX_SIZE, 0);
-
     if (bytes_read >= 0) {
         printf("user %u: Received slice: %d\n",getpid(), slice);
     } else {
