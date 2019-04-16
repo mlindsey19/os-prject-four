@@ -370,16 +370,24 @@ static void sigNextProc(pid_t npid){
         perror( "sig not sent: " );
 }
 
+static int getPCBindex(pid_t pid){
+    int i;
+    for (i = 0 ;i < NUMOFPCB; i++){
+        if (pid == pcb[i].pid)
+            return i;
+    }
+}
 
 static void checkWaitQueue(){
     if ( ( queueCount.waitQLen - queueCount.waitQsi ) == 0)
         return;
-    int i ;
-    for(i =0; i < NUMOFPCB;i++)
+    int i, j;
+    for(i = 0; i < NUMOFPCB; i++)
         if ( queueArrays.waitQpids[ i ] > 0 ){
             SimClock t;
-            t.sec = pcb[ queueArrays.waitQpids[ i ] ].waitingTill.sec;
-            t.ns = pcb[ queueArrays.waitQpids[ i ] ].waitingTill.ns;
+            j= getPCBindex(queueArrays.waitQpids[ i ]);
+            t.sec = pcb[ j ].waitingTill.sec;
+            t.ns = pcb[ j ].waitingTill.ns;
             if ( simClock->sec > t.sec ||
                  ( simClock->sec >= t.sec && simClock->ns > t.ns ) ) {
                 assignToQueue( queueArrays.waitQpids[ i ] );
