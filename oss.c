@@ -140,6 +140,7 @@ int main(int argc, char ** argv) {
     a = b =c = 0;
     while(k<10000000){
         increment( simClock );
+        mq_getattr(mq_b, &attr_b);
         if( attr_b.mq_curmsgs > 0 )
            receiveMessage();
 
