@@ -240,10 +240,10 @@ static void receiveMessage() {
     ssize_t bytes_read;
     char buffer[MAX_SIZE];
     memset( buffer,0, sizeof( buffer ) );
-
+bytes_read =0;
     int pid, fl, s, ns;
     bytes_read = mq_receive( mq,( char * ) &slice, MAX_SIZE, 0 );
-    if (bytes_read >= 0) {
+    if (bytes_read > 0) {
         printf("OSS: Received message -> %s\n", buffer);
         sscanf(buffer, "%i %i %i %i", &pid, &fl, &s, &ns );
         processMessage(pid, fl, s, ns);
