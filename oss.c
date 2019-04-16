@@ -245,7 +245,7 @@ bytes_read =0;
     bytes_read = mq_receive( mq, buffer, MAX_SIZE, 0 );
     if (bytes_read > 0) {
         printf("OSS: Received message -> %s\n", buffer);
-        sscanf(buffer, "%i %i %i %i", &pid, &fl, &s, &ns );
+        sscanf(buffer, " %d %d %d %d ", &pid, &fl, &s, &ns );
         processMessage(pid, fl, s, ns);
     } else
         printf("OSS: No message \n");

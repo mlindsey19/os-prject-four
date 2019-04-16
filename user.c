@@ -68,7 +68,7 @@ static void sighdl(int sig, siginfo_t *siginfo, void *context)
 static void receiveMessage() {
     ssize_t bytes_read;
 
-    bytes_read = mq_receive(mq,( char * ) &slice, MAX_SIZE, 0);
+    bytes_read = mq_receive(mq,( char * ) &slice, sizeof(slice), 0);
 
     if (bytes_read >= 0) {
         printf("child %u: Received slice: %d\n",getpid(), slice);
@@ -113,7 +113,7 @@ static void sendMessage() {
         default:;
     }
     memset( buffer,0, sizeof( buffer ) );
-    sprintf(buffer, "%i %i %i %i ", a, b, c, d);
+    sprintf(buffer, " %d %d %d %d ", a, b, c, d);
     int s = mq_send( mq, buffer, MAX_SIZE, 0 );
     printf("user: sending %s\n", buffer);
     if (s != 0){
