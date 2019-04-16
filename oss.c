@@ -100,7 +100,7 @@ int main(int argc, char ** argv) {
     struct sigevent sigevent;
     sigevent.sigev_notify = SIGEV_SIGNAL;
     sigevent.sigev_signo = SIGUSR2;
-    mq_notify(mq_b, &sigevent);
+    mq_notify(mq_a, &sigevent);
 
     gentime = nextProcTime();
     goTime.sec = 0;
@@ -138,8 +138,10 @@ int main(int argc, char ** argv) {
 
     int a,b,c;
     a = b =c = 0;
-    while(k<6){
+    while(k<1000){
         increment(simClock);
+        if( attr_a.mq_curmsgs > 0 )
+            receiveMessage();
 
         if (a == 0) {
             generateProc();
@@ -154,9 +156,9 @@ int main(int argc, char ** argv) {
             sendMessage();
             sleep( 1 );
             sigNextProc( npid );
-            k++;
+            k = k + 100;
         }
-
+        k++;
     }
 
     sigChild();
