@@ -133,7 +133,7 @@ int main(int argc, char ** argv) {
 
     int a,b,c;
     a = b =c = 0;
-    while(k<20){
+    while(k<6){
         increment(simClock);
 
         if (a == 0) {
@@ -145,10 +145,8 @@ int main(int argc, char ** argv) {
         }
         if ( simClock->sec > goTime.sec ||
              ( simClock->sec >= goTime.sec && simClock->ns >= goTime.ns ) ) {
-            sendMessage();
-            sleep(1);
             sigNextProc( getNext() );
-            sleep(1);
+            sendMessage();
             receiveMessage();
             k++;
         }
