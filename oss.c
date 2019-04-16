@@ -71,6 +71,7 @@ static void initQueCount();
 int main(int argc, char ** argv) {
     signal( SIGINT, sigHandle );
     signal( SIGALRM, sigHandle );
+    signal( SIGSEGV, sigHandle );
     initQueCount();
     checkArgs( output, argc, argv, &processLimit, &activeLimit );
 
