@@ -145,7 +145,7 @@ int main(int argc, char ** argv) {
 
             pid_t npid ;
         npid = getNext();
-        if( npid < 0 ){
+        if( npid > 0 ){
             sendMessage();
             sleep( 1 );
             sigNextProc( npid );

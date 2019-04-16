@@ -57,7 +57,6 @@ int main(int argc, char * argv[])
         sigwait(&set, &sig);
         receiveMessage();
         sendMessage();
-        ex = 0 ;
     }
     pcb->sys_time_end.sec = simClock->sec;
     pcb->sys_time_end.ns = simClock->ns;
