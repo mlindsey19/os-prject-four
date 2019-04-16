@@ -139,8 +139,8 @@ int main(int argc, char ** argv) {
     int a,b,c;
     a = b =c = 0;
     while(k<1000){
-        increment(simClock);
-        if( attr_a.mq_curmsgs > 0 )
+        increment( simClock );
+        if( attr_b.mq_curmsgs > 0 )
            receiveMessage();
 
         if (a == 0) {

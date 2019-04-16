@@ -21,11 +21,11 @@ SimClock * simClock;
 char buffer[MAX_SIZE];
 int slice;
 int ex;
+struct mq_attr attr_a, attr_b;
 
 int main(int argc, char * argv[])
 {
     srand( time( NULL ) ^ getpid() );
-    struct mq_attr attr_a, attr_b;
 
     int shmidc = shmget(SHMKEY_clock,BUFF_clock, 0777);
     int shmidp = shmget(SHMKEY_pcb, BUFF_pcb, 0777);
@@ -36,7 +36,7 @@ int main(int argc, char * argv[])
     mq_a = mq_open(QUEUE_A, O_RDWR | O_NONBLOCK, 0777);
     mq_b = mq_open(QUEUE_B, O_RDWR| O_NONBLOCK, 0777);
     mq_getattr(mq_a, &attr_a);
-    mq_getattr(mq_b, &attr_a);
+    mq_getattr(mq_b, &attr_b);
 
 
     struct sigaction action;
@@ -115,10 +115,11 @@ static void sendMessage() {
     memset( buffer,0, sizeof( buffer ) );
     sprintf(buffer, " %d %d %d %d ", a, b, c, d);
     int s = mq_send( mq_b, buffer, MAX_SIZE, 0 );
-    printf("user: sending %s\n", buffer);
+    printf("user: sending %s - %i\n", buffer, attr_b);
     if (s != 0){
         perror( "message didnt send" );
     }
+
     fflush(stdout);
 }
 
