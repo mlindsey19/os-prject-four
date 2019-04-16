@@ -100,7 +100,7 @@ int main(int argc, char ** argv) {
     struct sigevent sigevent;
     sigevent.sigev_notify = SIGEV_SIGNAL;
     sigevent.sigev_signo = SIGCONT;
-    mq_notify(mq_b, &sigevent);
+   // mq_notify(mq_b, &sigevent);
 
     gentime = nextProcTime();
     goTime.sec = 0;
@@ -141,7 +141,7 @@ int main(int argc, char ** argv) {
     while(k<1000){
         increment(simClock);
         if( attr_a.mq_curmsgs > 0 )
-        ;//    receiveMessage();
+           receiveMessage();
 
         if (a == 0) {
             generateProc();
