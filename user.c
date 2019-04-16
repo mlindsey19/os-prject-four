@@ -56,6 +56,7 @@ int main(int argc, char * argv[])
     }
     pcb->sys_time_end.sec = simClock->sec;
     pcb->sys_time_end.ns = simClock->ns;
+    printf("user pid %u -> BYE\n", getpid());
     exit(808);
 }
 
@@ -67,9 +68,9 @@ static void receiveMessage() {
     bytes_read = mq_receive(mq,( char * ) &slice, MAX_SIZE, 0);
 
     if (bytes_read >= 0) {
-        printf("child %u: Received slice: %d\n",getpid(), slice);
+        printf("user %u: Received slice: %d\n",getpid(), slice);
     } else {
-        printf("child %u: no message \n", getpid());
+        printf("user %u: no message \n", getpid());
     }
     fflush(stdout);
 }
