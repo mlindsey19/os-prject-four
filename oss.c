@@ -376,8 +376,10 @@ static void checkWaitQueue(){
         return;
     int i ;
     for(i =0; i < NUMOFPCB;i++)
-        if (queueArrays.waitQpids[i] > 0){
-            SimClock t = pcb[queueArrays.waitQpids[i]].waitingTill;
+        if ( queueArrays.waitQpids[ i ] > 0 ){
+            SimClock t;
+            t.sec = pcb[ queueArrays.waitQpids[ i ] ].waitingTill.sec;
+            t.ns = pcb[ queueArrays.waitQpids[ i ] ].waitingTill.ns;
             if ( simClock->sec > t.sec ||
                  ( simClock->sec >= t.sec && simClock->ns > t.ns ) ) {
                 assignToQueue( queueArrays.waitQpids[ i ] );
