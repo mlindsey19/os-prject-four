@@ -143,7 +143,7 @@ int main(int argc, char ** argv) {
              ( simClock->sec >= goTime.sec && simClock->ns >= goTime.ns ) ) {
             slice = QUANTUM;
             sendMessage();
-            sigNextProc(getNext());
+            sigNextProc( getNext() );
        sleep(2);
             receiveMessage();
             k=0;
@@ -238,6 +238,7 @@ static void sigChild() {
 }
 
 static void receiveMessage() {
+    printf("OSS: curent msgs -> %u \n", attr.mq_curmsgs);
 
     ssize_t bytes_read;
     char buffer[MAX_SIZE];
