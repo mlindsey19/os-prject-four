@@ -22,10 +22,9 @@ char * getClockMem(){
 }
 
 void deleteClockMem( char * paddr ){
-    int er;
 
     shmctl(shmid, IPC_RMID, NULL);
-    if( ( er = shmdt( paddr ) ) == -1 ){
-        perror("err shmdt clock:");
+    if(  shmdt( paddr )  == -1 ){
+        perror("err shmdt clock");
     }
 }

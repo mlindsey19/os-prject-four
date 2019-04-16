@@ -21,10 +21,9 @@ char * getPCBMem(){
 }
 
 void deletePCBMemory(char * paddr){
-    int er;
 
     shmctl(shmid, IPC_RMID, NULL);
-    if((er = shmdt(paddr)) == -1){
-        perror("err shmdt pcb:");
+    if( shmdt(paddr) == -1){
+        perror("err shmdt pcb");
     }
 }

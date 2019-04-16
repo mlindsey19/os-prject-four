@@ -50,9 +50,7 @@ int main(int argc, char * argv[])
     ex = 1;
     while(ex) {
         sigwait(&set, &sig);
-        usleep(1000);
         receiveMessage();
-        usleep(1000);
         sendMessage();
         ex = 0;
     }
@@ -115,7 +113,7 @@ static void sendMessage() {
         default:;
     }
     memset( buffer,0, sizeof( buffer ) );
-    sprintf(buffer, "%i %i %i %i", a, b, c, d);
+    sprintf(buffer, "%i %i %i %i ", a, b, c, d);
     int s = mq_send( mq, buffer, MAX_SIZE, 0 );
     printf("user: sending %s\n", buffer);
     if (s != 0){
