@@ -50,7 +50,8 @@ typedef struct {
     int waitQpids[NUMOFPCB];
 } QueueArrays;
 
-#define QUEUE_NAME  "/a_queue"
+#define QUEUE_A  "/a_queue"
+#define QUEUE_B  "/b_queue"
 
 #define MAX_SIZE 128
 

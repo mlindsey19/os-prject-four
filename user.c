@@ -16,7 +16,7 @@ static void receiveMessage();
 static void sendMessage();
 
 ProcessControlBlock * pcb;
-mqd_t mq;
+mqd_t mq_a,mq_b;
 SimClock * simClock;
 char buffer[MAX_SIZE];
 int slice;
@@ -25,6 +25,7 @@ int ex;
 int main(int argc, char * argv[])
 {
     srand( time( NULL ) ^ getpid() );
+    struct mq_attr attr_a, attr_b;
 
     int shmidc = shmget(SHMKEY_clock,BUFF_clock, 0777);
     int shmidp = shmget(SHMKEY_pcb, BUFF_pcb, 0777);
@@ -32,7 +33,11 @@ int main(int argc, char * argv[])
     pcb =  ( shmat ( shmidp, 0, 0));
 
 
-    mq = mq_open(QUEUE_NAME, O_RDWR, 0777);
+    mq_a = mq_open(QUEUE_A, O_RDWR, 0777);
+    mq_b = mq_open(QUEUE_B, O_RDWR, 0777);
+    mq_getattr(mq_a, &attr_a);
+    mq_getattr(mq_b, &attr_a);
+
 
     struct sigaction action;
     memset (&action, 0, sizeof(action));
@@ -47,12 +52,13 @@ int main(int argc, char * argv[])
     if(sigaddset(&set, SIGUSR1) == -1) {
         perror("Sigaddset error");
     }
-    ex = 0;
-    while(ex<20) {
+    ex = 1;
+    while(ex) {
         sigwait(&set, &sig);
+        while(attr_a.mq_curmsgs == 0);
         receiveMessage();
         sendMessage();
-        ex ++;
+        ex = 0 ;
     }
     pcb->sys_time_end.sec = simClock->sec;
     pcb->sys_time_end.ns = simClock->ns;
@@ -65,7 +71,7 @@ static void sighdl(int sig, siginfo_t *siginfo, void *context){}
 static void receiveMessage() {
     ssize_t bytes_read;
 
-    bytes_read = mq_receive(mq,( char * ) &slice, MAX_SIZE, 0);
+    bytes_read = mq_receive(mq_a,( char * ) &slice, MAX_SIZE, 0);
 
     if (bytes_read >= 0) {
         printf("user %u: Received slice: %d\n",getpid(), slice);
@@ -111,7 +117,7 @@ static void sendMessage() {
     }
     memset( buffer,0, sizeof( buffer ) );
     sprintf(buffer, " %d %d %d %d ", a, b, c, d);
-    int s = mq_send( mq, buffer, MAX_SIZE, 0 );
+    int s = mq_send( mq_b, buffer, MAX_SIZE, 0 );
     printf("user: sending %s\n", buffer);
     if (s != 0){
         perror( "message didnt send" );

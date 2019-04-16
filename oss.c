@@ -57,11 +57,11 @@ ProcessControlBlock * pcb;
 SimClock * simClock;
 SimClock goTime;
 
-struct mq_attr attr;
+struct mq_attr attr_a, attr_b;
 
 pid_t pids[ PLIMIT ];
 int bitv[NUMOFPCB];
-mqd_t mq;
+mqd_t mq_a, mq_b;
 char user[] = "user";
 char path[] = "./user";
 //alarm(3);
@@ -86,12 +86,16 @@ int main(int argc, char ** argv) {
     pcb = ( ProcessControlBlock * ) pcbpaddr;
 
 
-    attr.mq_flags = 0;
-    attr.mq_maxmsg = 10;
-    attr.mq_msgsize = MAX_SIZE;
-    attr.mq_curmsgs = 0;
-
-    mq = mq_open(QUEUE_NAME, O_CREAT | O_RDWR, 0777, &attr);
+    attr_a.mq_flags = 0;
+    attr_a.mq_maxmsg = 10;
+    attr_a.mq_msgsize = MAX_SIZE;
+    attr_a.mq_curmsgs = 0;
+    attr_b.mq_flags = 0;
+    attr_b.mq_maxmsg = 10;
+    attr_b.mq_msgsize = MAX_SIZE;
+    attr_b.mq_curmsgs = 0;
+    mq_a = mq_open(QUEUE_A, O_CREAT | O_RDWR, 0777, &attr_a);
+    mq_b = mq_open(QUEUE_B, O_CREAT | O_RDWR, 0777, &attr_b);
 
     gentime = nextProcTime();
     goTime.sec = 0;
@@ -206,8 +210,10 @@ static void sigHandle(int cc){
 static void deleteMemory() {
     deleteClockMem(clockaddr);
     deletePCBMemory(pcbpaddr);
-    mq_close(mq);
-    mq_unlink(QUEUE_NAME);
+    mq_close(mq_a);
+    mq_unlink(QUEUE_A);
+    mq_close(mq_b);
+    mq_unlink(QUEUE_B);
 }
 static void cleanSHM(){
     int i;
@@ -242,7 +248,7 @@ static void receiveMessage() {
     char buffer[MAX_SIZE];
     memset( buffer,0, sizeof( buffer ) );
     int pid, fl, s, ns;
-    bytes_read = mq_receive( mq, buffer, MAX_SIZE, 0 );
+    bytes_read = mq_receive( mq_b, buffer, MAX_SIZE, 0 );
     if (bytes_read > 0) {
         printf("OSS: Received message -> %s\n", buffer);
         sscanf(buffer, " %d %d %d %d ", &pid, &fl, &s, &ns );
@@ -310,7 +316,7 @@ static void aggregateStats( pid_t pid ){
 
 static void sendMessage() {
     printf("OSS: sending slice %i\n", slice);
-    int s = mq_send( mq, ( char * ) &slice, MAX_SIZE, 0 );
+    int s = mq_send( mq_a, ( char * ) &slice, MAX_SIZE, 0 );
     if (s != 0)
         perror( "Parent - message didnt send" );
     fflush(stdout);
