@@ -68,7 +68,7 @@ static void sighdl(int sig, siginfo_t *siginfo, void *context)
 static void receiveMessage() {
     ssize_t bytes_read;
 
-    bytes_read = mq_receive(mq,( char * ) &slice, sizeof( slice ), 0);
+    bytes_read = mq_receive(mq,( char * ) &slice, MAX_SIZE, 0);
 
     if (bytes_read >= 0) {
         printf("child %u: Received slice: %d\n",getpid(), slice);

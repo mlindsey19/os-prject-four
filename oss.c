@@ -243,7 +243,7 @@ static void receiveMessage() {
     char buffer[MAX_SIZE];
     memset( buffer,0, sizeof( buffer ) );
     int pid, fl, s, ns;
-    bytes_read = mq_receive( mq, buffer, strlen( buffer ), 0 );
+    bytes_read = mq_receive( mq, buffer, MAX_SIZE, 0 );
     if (bytes_read > 0) {
         printf("OSS: Received message -> %s\n", buffer);
         sscanf(buffer, " %d %d %d %d ", &pid, &fl, &s, &ns );
@@ -310,6 +310,7 @@ static void aggregateStats( pid_t pid ){
 }
 
 static void sendMessage() {
+    printf("OSS: sending slice %i\n", slice);
     int s = mq_send( mq, ( char * ) &slice, MAX_SIZE, 0 );
     if (s != 0)
         perror( "Parent - message didnt send" );
