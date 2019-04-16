@@ -54,9 +54,9 @@ int main(int argc, char * argv[])
     }
     ex = 1;
     while(ex) {
-        sleep(1);
         sigwait(&set, &sig);
         receiveMessage();
+        usleep(1000);
         sendMessage();
     }
     pcb->sys_time_end.sec = simClock->sec;

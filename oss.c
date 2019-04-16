@@ -156,7 +156,7 @@ int main(int argc, char ** argv) {
             sendMessage();
             sleep( 1 );
             sigNextProc( npid );
-            k = k + 100;
+            k = k + 100000;
         }
         k++;
     }
@@ -366,6 +366,7 @@ static void generateProc() {
     }
 }
 static void sigNextProc(pid_t npid){
+    printf("OSS: sending signal to %u\n", npid);
     if ( sigqueue( npid, SIGUSR1, ( union sigval ) 0 ) != 0 )
         perror( "sig not sent: " );
 }
