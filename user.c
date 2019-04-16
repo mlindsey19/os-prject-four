@@ -87,13 +87,14 @@ static void amendPCB(int percent){
 }
 
 static void sendMessage() {
+    srand( time( NULL ) ^ getpid() );
     int a,b,c,d;
     c = d = 0;
     a = rand() % 3;
     b = getpid();
     switch ( a ){
         case 0:
-            ex = 1;
+            ex = 0;
             break;
         case 1:
             amendPCB(99);

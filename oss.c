@@ -268,7 +268,7 @@ static void receiveMessage() {
     fflush(stdout);
 }
 
-static void processMessage(int pid, int fl, int s, int ns) {
+static void processMessage(int fl, int pid,  int s, int ns) {
     switch ( fl ){
         case 0:
             aggregateStats(pid);
