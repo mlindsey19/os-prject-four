@@ -144,7 +144,7 @@ int main(int argc, char ** argv) {
             slice = QUANTUM;
             sendMessage();
             sigNextProc(getNext());
-            while ( attr.mq_curmsgs == 0 );
+       sleep(2);
             receiveMessage();
             k=0;
         }
