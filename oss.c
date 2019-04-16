@@ -14,6 +14,7 @@
 #include "clock.h"
 #include "panamaCityBeach.h"
 #include "checkargs.h"
+#include "mockQueue.h"
 #include <errno.h>
 #include <time.h>
 #include <memory.h>
@@ -28,10 +29,10 @@ static void increment();
 static void sigChild();
 static void sigHandle( int );
 static void cleanSHM();
-static void assignPCB();
+static void assignPCB(ProcessControlBlock *);
 static SimClock nextProcTime();
 static void receiveMessage();
-static void sendMessage();
+static void sendMessage(pid_t);
 
 static void checkWaitQueue();
 static void assignToQueue(pid_t);
@@ -44,24 +45,25 @@ const unsigned int maxTimeBetweenNewProcsSecs = 2;
 static void sigNextProc(pid_t);
 static void processMessage(int pid, int fl, int s, int ns);
 static int getNext();
+char * getbuf();
 
-int processLimit = 6;
-int activeLimit = 3;
+int processLimit = 1;
+int activeLimit = 1;
 int active = 0;
 int total = 0;
 char * clockaddr;
 char * pcbpaddr;
+char * mockQueueaddr;
 char output[BUFF_out_sz] = "input.txt";
 SimClock gentime;
 ProcessControlBlock * pcb;
 SimClock * simClock;
-SimClock goTime;
+MockQueue * mockQueue;
+struct timespec ts;
 
-struct mq_attr attr_a, attr_b;
 
 pid_t pids[ PLIMIT ];
 int bitv[NUMOFPCB];
-mqd_t mq_a, mq_b;
 char user[] = "user";
 char path[] = "./user";
 //alarm(3);
@@ -74,23 +76,7 @@ int main(int argc, char ** argv) {
     signal( SIGINT, sigHandle );
     signal( SIGALRM, sigHandle );
     signal( SIGSEGV, sigHandle );
-    signal( SIGUSR1, sigHandle );
-    struct sigaction action;
-    memset (&action, 0, sizeof(action));
-    action.sa_sigaction = sigHandle;
-    action.sa_flags = SA_SIGINFO;
-    if (sigaction(SIGUSR1, &action, NULL) != 0) {
-        perror ( "sigaction" );
-        return 1;
-    }
-    sigset_t set;
-    int sig;
-    if(sigaddset(&set, SIGUSR1) == -1) {
-        perror("Sigaddset error");
-    }
-    initQueCount();
     checkArgs( output, argc, argv, &processLimit, &activeLimit );
-
     clockaddr = getClockMem();
     simClock = ( SimClock * ) clockaddr;
     simClock->sec = 0;
@@ -99,85 +85,34 @@ int main(int argc, char ** argv) {
     pcbpaddr = getPCBMem();
     pcb = ( ProcessControlBlock * ) pcbpaddr;
 
+    mockQueueaddr = getMockQMem();
+    mockQueue = ( MockQueue * ) mockQueueaddr;
 
-    attr_a.mq_flags = 0;
-    attr_a.mq_maxmsg = 10;
-    attr_a.mq_msgsize = MAX_SIZE;
-    attr_a.mq_curmsgs = 0;
-    attr_b.mq_flags = 0;
-    attr_b.mq_maxmsg = 10;
-    attr_b.mq_msgsize = MAX_SIZE;
-    attr_b.mq_curmsgs = 0;
-    mq_a = mq_open( QUEUE_A, O_CREAT | O_RDWR | O_NONBLOCK, 0777, &attr_a );
-    mq_b = mq_open( QUEUE_B, O_CREAT | O_RDWR | O_NONBLOCK, 0777, &attr_b );
-    struct sigevent sigevent;
-    sigevent.sigev_notify = SIGEV_SIGNAL;
-    sigevent.sigev_signo = SIGCONT;
-   // mq_notify(mq_b, &sigevent);
+    initQueCount();
+
 
     gentime = nextProcTime();
-    goTime.sec = 0;
-    goTime.ns = 0;
-    int k = 1;
-//    while (1){
-//
-//        increment( simClock );
-//        checkWaitQueue();
-//
-//        if ( simClock->sec > gentime.sec ||
-//             ( simClock->sec >= gentime.sec && simClock->ns > gentime.ns ) ) {
-//            generateProc();
-//            gentime = nextProcTime();
-//        }
-//        for (total = 0 ; total < processLimit ; ) {
-//            pid_t npid;
-//            if ( simClock->sec > goTime.sec ||
-//                 ( simClock->sec >= goTime.sec && simClock->ns >= goTime.ns ) ) {
-//                goTime.sec = simClock->sec;
-//                goTime.ns = simClock->ns;
-//                npid = getNext();
-//                if(npid == 0)
-//                    continue;
-//                sendMessage();
-//                sigNextProc(npid);
-//                sleep(1);
-//                receiveMessage();
-//            }
-//            if( active >= activeLimit )
-//                sigChild();
-//            if ( total == processLimit && active <= 0 )
-//                break;
-//        }
-
-    int a,b,c;
-    a = b =c = 0;
-    while(k<10000000){
-        increment( simClock );
-        mq_getattr(mq_b, &attr_b);
-        checkWaitQueue();
-        if( attr_b.mq_curmsgs > 0 )
-           receiveMessage();
-
-        if (a == 0) {
+    while(1) {
+        increment();
+        if ((active < activeLimit) && ( total< processLimit ) &&
+            (simClock->sec >= gentime.sec && simClock->ns > gentime.ns)) {
             generateProc();
-            a++;
+            gentime = nextProcTime();
+            sleep(1);
         }
-
-        pid_t npid ;
+        pid_t npid;
         npid = getNext();
-        if( npid > 0 ){
-            sendMessage();
-            sleep( 1 );
-            sigNextProc( npid );
-            k = k + 100000;
+        if (npid > 0) {
+            sendMessage(npid);
+            sigNextProc(npid);
         }
-        k++;
+
+        receiveMessage();
+
+        if(active == 0 && total == processLimit)
+            break;
     }
-
     sigChild();
-    cleanSHM();
-
-
     return 0;
 }
 static int getNext(){
@@ -199,23 +134,25 @@ static int getNext(){
     }
     return -1;
 }
-static void assignPCB(){
-    pcb->priority = rand() % 100 < 12 ? 0 : 1;
-    pcb->pid = pids[ total ];
-    pcb->cpu_used.sec = 0;
-    pcb->cpu_used.ns = 0;
-    pcb->sys_time_begin.sec = simClock->sec;
-    pcb->sys_time_begin.ns = simClock->ns;
-    pcb->sys_time_end.sec = 0;
-    pcb->sys_time_end.ns = 0;
-    pcb->waitingTill.ns = 0;
-    pcb->waitingTill.sec = 0;
-    pcb->run = 0;
+static void assignPCB(ProcessControlBlock * pcbt){
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    srand( (time_t)ts.tv_nsec  );
+    pcbt->priority = rand() % 100 < 12 ? 0 : 1;
+    pcbt->pid = pids[ total ];
+    pcbt->cpu_used.sec = 0;
+    pcbt->cpu_used.ns = 0;
+    pcbt->sys_time_begin.sec = simClock->sec;
+    pcbt->sys_time_begin.ns = simClock->ns;
+    pcbt->sys_time_end.sec = 0;
+    pcbt->sys_time_end.ns = 0;
+    pcbt->waitingTill.ns = 0;
+    pcbt->waitingTill.sec = 0;
+    pcbt->run = 0;
 }
 
 static void increment(){
-    srand( time( NULL ) ^ getpid() );
-    //simClock->sec++;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    srand( (time_t)ts.tv_nsec );    //simClock->sec++;
     simClock->ns += rand() % 100000;
     if (simClock->ns > secWorthNancSec ){
         simClock->sec++;
@@ -225,18 +162,13 @@ static void increment(){
 }
 
 static void sigHandle(int cc){
-    if(cc == SIGUSR1)
-        receiveMessage();
-    else
-        cleanSHM();
+
+    cleanSHM();
 }
 static void deleteMemory() {
     deleteClockMem(clockaddr);
     deletePCBMemory(pcbpaddr);
-    mq_close(mq_a);
-    mq_unlink(QUEUE_A);
-    mq_close(mq_b);
-    mq_unlink(QUEUE_B);
+    deleteMockQMem(mockQueueaddr);
 }
 static void cleanSHM(){
     int i;
@@ -267,18 +199,17 @@ static void sigChild() {
 }
 
 static void receiveMessage() {
-    ssize_t bytes_read;
-    char buffer[MAX_SIZE];
-    memset( buffer,0, sizeof( buffer ) );
+    char * buffer;
+    int si = mockQueue->si;
     int pid, fl, s, ns;
-    bytes_read = mq_receive( mq_b, buffer, MAX_SIZE, 0 );
-    if (bytes_read > 0) {
-        printf("OSS: Received message -> %s\n", buffer);
+    if ( ( mockQueue->len - si ) > 0 ) {
+        buffer = getbuf();
+        printf("OSS: Received message -> %s\n", buffer );
         sscanf(buffer, " %d %d %d %d ", &pid, &fl, &s, &ns );
+        memset( buffer, 0, MAX_SIZE );
+        mockQueue->si++;
         processMessage(pid, fl, s, ns);
-    } else
-        printf("OSS: No message \n");
-    fflush(stdout);
+    }
 }
 
 static void processMessage(int fl, int pid,  int s, int ns) {
@@ -289,7 +220,6 @@ static void processMessage(int fl, int pid,  int s, int ns) {
             break;
         case 1:
             dispatchTime();
-            addToGoTime(s, ns);
             assignToQueue(pid);
             printf("OSS: Received pid: %u used %is %ins. \n", pid, s, ns );
             break;
@@ -299,7 +229,6 @@ static void processMessage(int fl, int pid,  int s, int ns) {
         case 3:
             printf("OSS: Received pid: %u preempted after %is %ins. \n", pid, s, ns );
             dispatchTime();
-            addToGoTime(s, ns);
             assignToQueue(pid);
             break;
         default:
@@ -307,26 +236,15 @@ static void processMessage(int fl, int pid,  int s, int ns) {
     }
 }
 static void dispatchTime() {
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    srand( (time_t)ts.tv_nsec );
     int d = (rand() % 9900) + 100;
     printf("OSS: Dispatch time %ins. \n", d);
-    goTime.ns += d;
-    if (goTime.ns > secWorthNancSec) {
-        goTime.sec++;
-        goTime.ns -= secWorthNancSec;
-    }
-}
-static void addToGoTime(int s, int ns){
-    goTime.ns += ns;
-    goTime.sec += s;
-    if (goTime.ns > secWorthNancSec ){
-        goTime.sec++;
-        goTime.ns -= secWorthNancSec;
-    }
 }
 static void aggregateStats( pid_t pid ){
     int i;
     for ( i = 0; i < NUMOFPCB; i++ ) {
-        if (pid == pcb[i].pid) {
+        if ( pid == pcb[ i ].pid ) {
             bitv[i] = 0;
             active--;
             break;
@@ -334,18 +252,18 @@ static void aggregateStats( pid_t pid ){
     }
 
     //do something with stats
-
 }
 
-static void sendMessage() {
+static void sendMessage(pid_t npid) {
+    while ( mockQueue->messageTo != -1 );
     printf("OSS: sending slice %i\n", slice);
-    int s = mq_send( mq_a, ( char * ) &slice, MAX_SIZE, 0 );
-    if (s != 0)
-        perror( "Parent - message didnt send" );
-    fflush(stdout);
+    mockQueue->messageTo = npid;
+    mockQueue->slice = slice;
 }
 
 static SimClock nextProcTime(){
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    srand( (time_t)ts.tv_nsec  );
     int ss = maxTimeBetweenNewProcsSecs * secWorthNancSec + maxTimeBetweenNewProcsNS;
     SimClock x;
     int dx = ( rand() % ss ) ;
@@ -379,26 +297,18 @@ static void generateProc() {
         active++, total++;
     }
 }
-static void sigNextProc(pid_t npid){
-    printf("OSS: sending signal to %u\n", npid);
-    if ( sigqueue( npid, SIGUSR1, ( union sigval ) 0 ) != 0 )
-        perror( "sig not sent: " );
-    int k;
-    for (k = 0; k < NUMOFPCB; k++){
-        if(getpid() == pcb[ k ].pid ){
-            pcb[ k ].run = 1;
-            break;
-        }
-
-    }
-}
-
 static int getPCBindex(pid_t pid){
     int i;
     for (i = 0 ;i < NUMOFPCB; i++){
-        if (pid == pcb[i].pid)
+        if (pid == pcb[ i ].pid)
             return i;
     }
+}
+static void sigNextProc(pid_t npid){
+    printf("OSS: sending signal to %u\n", npid);
+    int k = getPCBindex(npid);
+    pcb[ k ].run = 1;
+
 }
 
 static void checkWaitQueue(){
@@ -420,13 +330,9 @@ static void checkWaitQueue(){
         }
 }
 static void assignToQueue(pid_t pid) {
-    int i, j;
-    for (i = 0, j = -1; i < NUMOFPCB; i++) {
-        if (pcb[i].pid == pid)
-            j = i;
-    }
+    int j = getPCBindex(pid);
     if (j < 0) {
-        printf("OSS: pid did not match any in table");
+        printf("OSS: pid did not match any in table \n");
         return;
     }
 
@@ -463,4 +369,25 @@ static void initQueCount(){
     int i;
     for (i=0; i< NUMOFPCB; i++)
         bitv[ i ] = 0;
+    mockQueue->si = 0;
+    mockQueue->messageTo = -1;
+    mockQueue->slice = 0;
+}
+char * getbuf(){
+    int ind = mockQueue->si % NBUFS;
+    switch (ind){
+        case 0:
+            return mockQueue->buffer0;
+        case 1:
+            return mockQueue->buffer1;
+        case 2:
+            return mockQueue->buffer2;
+        case 3:
+            return mockQueue->buffer3;
+        case 4:
+            return mockQueue->buffer4;
+        case 5:
+            return mockQueue->buffer5;
+
+    }
 }

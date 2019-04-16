@@ -5,7 +5,7 @@
 CC = cc  
 CFLAGS = -g -Wall -lrt
 
-OBJ1 = oss.o checkargs.o clock.o panamaCityBeach.o
+OBJ1 = oss.o checkargs.o clock.o panamaCityBeach.o mockQueue.o
 OBJ2 = user.o
 
 TARGET1 = oss
