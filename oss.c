@@ -141,9 +141,9 @@ int main(int argc, char ** argv) {
              ( simClock->sec >= goTime.sec && simClock->ns >= goTime.ns ) ) {
             slice = QUANTUM;
             sendMessage();
-            usleep(1000);
-            sigNextProc(getNext());
             usleep(100000);
+            sigNextProc(getNext());
+            usleep(1000000);
             receiveMessage();
             k=0;
         }
@@ -240,9 +240,8 @@ static void receiveMessage() {
     ssize_t bytes_read;
     char buffer[MAX_SIZE];
     memset( buffer,0, sizeof( buffer ) );
-bytes_read =0;
     int pid, fl, s, ns;
-    bytes_read = mq_receive( mq, buffer, MAX_SIZE, 0 );
+    bytes_read = mq_receive( mq, buffer, strlen( buffer ), 0 );
     if (bytes_read > 0) {
         printf("OSS: Received message -> %s\n", buffer);
         sscanf(buffer, " %d %d %d %d ", &pid, &fl, &s, &ns );
