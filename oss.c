@@ -16,6 +16,7 @@
 #include "checkargs.h"
 #include <errno.h>
 #include <time.h>
+#include <memory.h>
 
 int errno;
 
@@ -23,11 +24,11 @@ int errno;
 #define QUANTUM 50000
 int slice;
 
-void increment( SimClock * );
+void increment();
 void sigChild();
 void sigHandle( int );
 void cleanSHM();
-void assignPCB( ProcessControlBlock * );
+void assignPCB();
 SimClock nextProcTime();
 void receiveMessage();
 void sendMessage();
@@ -92,7 +93,7 @@ int main(int argc, char ** argv) {
      gentime = nextProcTime();
     goTime.sec = 0;
     goTime.ns = 0;
-    int k=0;
+    int k = 0;
     while (1){
 
         increment( simClock );
@@ -148,7 +149,7 @@ int getNext(){
     }
     return 0;
 }
-void assignPCB(ProcessControlBlock * pcb){
+void assignPCB(){
     pcb->priority = rand() % 100 < 12 ? 0 : 1;
     pcb->pid = pids[ total ];
     pcb->cpu_used.sec = 0;
@@ -161,7 +162,7 @@ void assignPCB(ProcessControlBlock * pcb){
     pcb->waitingTill.sec = 0;
 }
 
-void increment(SimClock * simClock){
+void increment(){
     srand( time( NULL ) ^ getpid() );
     //simClock->sec++;
     simClock->ns += rand() % 100000;
@@ -212,6 +213,8 @@ void sigChild() {
 void receiveMessage() {
     ssize_t bytes_read;
     char buffer[MAX_SIZE];
+    memset( buffer,0, sizeof( buffer ) );
+
     int pid, fl, s, ns;
     bytes_read = mq_receive( mq,( char * ) &slice, MAX_SIZE, 0 );
     if (bytes_read >= 0) {

@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include <time.h>
 #include "string.h"
+#include <memory.h>
+
 static void sighdl(int sig, siginfo_t *siginfo, void *context);
 void receiveMessage();
 void sendMessage();
@@ -48,7 +50,9 @@ int main(int argc, char * argv[])
     ex = 0;
     while(!ex) {
         sigwait(&set, &sig);
+        usleep(1000);
         receiveMessage();
+        usleep(1000);
         sendMessage();
     }
     pcb->sys_time_end.sec = simClock->sec;
@@ -109,8 +113,10 @@ void sendMessage() {
             break;
         default:;
     }
+    memset( buffer,0, sizeof( buffer ) );
     sprintf(buffer, "%i %i %i %i", a, b, c, d);
     int s = mq_send( mq, buffer, MAX_SIZE, 0 );
+    printf("user: sending %s\n", buffer);
     if (s != 0){
         perror( "message didnt send" );
     }
