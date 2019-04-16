@@ -74,7 +74,7 @@ int main(int argc, char ** argv) {
     signal( SIGINT, sigHandle );
     signal( SIGALRM, sigHandle );
     signal( SIGSEGV, sigHandle );
-    signal(SIGUSR2, sigHandle );
+    signal(SIGCONT, sigHandle );
     initQueCount();
     checkArgs( output, argc, argv, &processLimit, &activeLimit );
 
@@ -99,8 +99,8 @@ int main(int argc, char ** argv) {
     mq_b = mq_open( QUEUE_B, O_CREAT | O_RDWR | O_NONBLOCK, 0777, &attr_b );
     struct sigevent sigevent;
     sigevent.sigev_notify = SIGEV_SIGNAL;
-    sigevent.sigev_signo = SIGUSR2;
-    mq_notify(mq_a, &sigevent);
+    sigevent.sigev_signo = SIGCONT;
+    mq_notify(mq_b, &sigevent);
 
     gentime = nextProcTime();
     goTime.sec = 0;
@@ -141,7 +141,7 @@ int main(int argc, char ** argv) {
     while(k<1000){
         increment(simClock);
         if( attr_a.mq_curmsgs > 0 )
-            receiveMessage();
+        ;//    receiveMessage();
 
         if (a == 0) {
             generateProc();
