@@ -47,23 +47,19 @@ int main(int argc, char * argv[])
     if(sigaddset(&set, SIGUSR1) == -1) {
         perror("Sigaddset error");
     }
-    ex = 1;
-    while(ex) {
+    ex = 0;
+    while(ex<20) {
         sigwait(&set, &sig);
         receiveMessage();
         sendMessage();
-        ex = 0;
+        ex ++;
     }
     pcb->sys_time_end.sec = simClock->sec;
     pcb->sys_time_end.ns = simClock->ns;
     exit(808);
 }
 
-static void sighdl(int sig, siginfo_t *siginfo, void *context)
-{
-    printf ("Sending PID: %ld, UID: %ld\n",
-            (long)siginfo->si_pid, (long)siginfo->si_uid);
-}
+static void sighdl(int sig, siginfo_t *siginfo, void *context){}
 
 static void receiveMessage() {
     ssize_t bytes_read;

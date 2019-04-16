@@ -129,7 +129,7 @@ int main(int argc, char ** argv) {
 
     int a,b,c;
     a = b =c = 0;
-    while(k){
+    while(k<20){
         increment(simClock);
 
         if (a == 0) {
@@ -145,9 +145,9 @@ int main(int argc, char ** argv) {
             sendMessage();
             sleep(1);
             sigNextProc( getNext() );
-       sleep(1);
+            sleep(1);
             receiveMessage();
-            k=0;
+            k++;
         }
 
     }
@@ -239,8 +239,6 @@ static void sigChild() {
 }
 
 static void receiveMessage() {
-    printf("OSS: curent msgs -> %u \n", attr.mq_curmsgs);
-
     ssize_t bytes_read;
     char buffer[MAX_SIZE];
     memset( buffer,0, sizeof( buffer ) );
