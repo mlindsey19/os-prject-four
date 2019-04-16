@@ -24,27 +24,27 @@ int errno;
 #define QUANTUM 50000
 int slice;
 
-void increment();
-void sigChild();
-void sigHandle( int );
-void cleanSHM();
-void assignPCB();
-SimClock nextProcTime();
-void receiveMessage();
-void sendMessage();
+static void increment();
+static void sigChild();
+static void sigHandle( int );
+static void cleanSHM();
+static void assignPCB();
+static SimClock nextProcTime();
+static void receiveMessage();
+static void sendMessage();
 
-void checkWaitQueue();
-void assignToQueue(pid_t);
-void aggregateStats(pid_t);
-void dispatchTime();
-void addToGoTime(int, int);
-void generateProc();
+static void checkWaitQueue();
+static void assignToQueue(pid_t);
+static void aggregateStats(pid_t);
+static void dispatchTime();
+static void addToGoTime(int, int);
+static void generateProc();
 const unsigned int maxTimeBetweenNewProcsNS = 0;
 const unsigned int maxTimeBetweenNewProcsSecs = 2;
-void sigNextProc(pid_t);
+static void sigNextProc(pid_t);
+static void processMessage(int pid, int fl, int s, int ns);
+static int getNext();
 
-void processMessage(int pid, int fl, int s, int ns);
-int getNext();
 int processLimit = 6;
 int activeLimit = 3;
 int active = 0;
@@ -91,47 +91,71 @@ int main(int argc, char ** argv) {
 
     mq = mq_open(QUEUE_NAME, O_CREAT | O_RDWR, 0777, &attr);
 
-     gentime = nextProcTime();
+    gentime = nextProcTime();
     goTime.sec = 0;
     goTime.ns = 0;
-    int k = 0;
-    while (1){
+    int k = 1;
+//    while (1){
+//
+//        increment( simClock );
+//        checkWaitQueue();
+//
+//        if ( simClock->sec > gentime.sec ||
+//             ( simClock->sec >= gentime.sec && simClock->ns > gentime.ns ) ) {
+//            generateProc();
+//            gentime = nextProcTime();
+//        }
+//        for (total = 0 ; total < processLimit ; ) {
+//            pid_t npid;
+//            if ( simClock->sec > goTime.sec ||
+//                 ( simClock->sec >= goTime.sec && simClock->ns >= goTime.ns ) ) {
+//                goTime.sec = simClock->sec;
+//                goTime.ns = simClock->ns;
+//                npid = getNext();
+//                if(npid == 0)
+//                    continue;
+//                sendMessage();
+//                sigNextProc(npid);
+//                sleep(1);
+//                receiveMessage();
+//            }
+//            if( active >= activeLimit )
+//                sigChild();
+//            if ( total == processLimit && active <= 0 )
+//                break;
+//        }
 
-        increment( simClock );
-        checkWaitQueue();
+    int a,b,c;
+    a = b =c = 0;
+    while(k){
+        increment(simClock);
 
-        if ( simClock->sec > gentime.sec ||
-             ( simClock->sec >= gentime.sec && simClock->ns > gentime.ns ) ) {
+        if (a == 0) {
             generateProc();
-            gentime = nextProcTime();
-        }
-        // for (total = 0 ; total < processLimit ; ) {
-        pid_t npid;
-        if ( simClock->sec > goTime.sec ||
-             ( simClock->sec >= goTime.sec && simClock->ns >= goTime.ns ) ) {
+            a++;
             goTime.sec = simClock->sec;
             goTime.ns = simClock->ns;
-            npid = getNext();
-            if(npid == 0)
-                continue;
-            sendMessage();
-            sigNextProc(npid);
-            sleep(1);
-            receiveMessage();
+            dispatchTime();
         }
-        if( active >= activeLimit )
-            sigChild();
-        if ( total == processLimit && active <= 0 )
-            break;
+        if ( simClock->sec > goTime.sec ||
+             ( simClock->sec >= goTime.sec && simClock->ns >= goTime.ns ) ) {
+            sendMessage();
+            usleep(1000);
+            sigNextProc(getNext());
+            usleep(1000);
+            receiveMessage();
+            k=0;
+        }
+
     }
 
-
+    sigChild();
     cleanSHM();
 
 
     return 0;
 }
-int getNext(){
+static int getNext(){
     if ( ( queueCount.realQLen - queueCount.realQsi ) > 0 ){
         slice = QUANTUM;
         return queueArrays.realQpids[ queueCount.realQsi++ % NUMOFPCB ];
@@ -150,7 +174,7 @@ int getNext(){
     }
     return 0;
 }
-void assignPCB(){
+static void assignPCB(){
     pcb->priority = rand() % 100 < 12 ? 0 : 1;
     pcb->pid = pids[ total ];
     pcb->cpu_used.sec = 0;
@@ -163,7 +187,7 @@ void assignPCB(){
     pcb->waitingTill.sec = 0;
 }
 
-void increment(){
+static void increment(){
     srand( time( NULL ) ^ getpid() );
     //simClock->sec++;
     simClock->ns += rand() % 100000;
@@ -174,16 +198,16 @@ void increment(){
     }
 }
 
-void sigHandle(int cc){
+static void sigHandle(int cc){
     cleanSHM();
 }
-void deleteMemory() {
+static void deleteMemory() {
     deleteClockMem(clockaddr);
     deletePCBMemory(pcbpaddr);
     mq_close(mq);
     mq_unlink(QUEUE_NAME);
 }
-void cleanSHM(){
+static void cleanSHM(){
     int i;
     for (i =0; i < processLimit; i++) {
         if (pids[i] > 0) {
@@ -196,7 +220,7 @@ void cleanSHM(){
 
 }
 
-void sigChild() {
+static void sigChild() {
     pid_t pid;
     int i, status;
     for (i = 0; i < processLimit; i++) {
@@ -211,7 +235,7 @@ void sigChild() {
     }
 }
 
-void receiveMessage() {
+static void receiveMessage() {
     ssize_t bytes_read;
     char buffer[MAX_SIZE];
     memset( buffer,0, sizeof( buffer ) );
@@ -227,7 +251,7 @@ void receiveMessage() {
     fflush(stdout);
 }
 
-void processMessage(int pid, int fl, int s, int ns) {
+static void processMessage(int pid, int fl, int s, int ns) {
     switch ( fl ){
         case 0:
             aggregateStats(pid);
@@ -252,7 +276,7 @@ void processMessage(int pid, int fl, int s, int ns) {
             ;
     }
 }
-void dispatchTime() {
+static void dispatchTime() {
     int d = (rand() % 9900) + 100;
     printf("OSS: Dispatch time %ins. \n", d);
     goTime.ns += d;
@@ -261,7 +285,7 @@ void dispatchTime() {
         goTime.ns -= secWorthNancSec;
     }
 }
-void addToGoTime(int s, int ns){
+static void addToGoTime(int s, int ns){
     goTime.ns += ns;
     goTime.sec += s;
     if (goTime.ns > secWorthNancSec ){
@@ -269,25 +293,28 @@ void addToGoTime(int s, int ns){
         goTime.ns -= secWorthNancSec;
     }
 }
-void aggregateStats( pid_t pid ){
+static void aggregateStats( pid_t pid ){
     int i;
-    for ( i = 0; i < NUMOFPCB; i++ ){
-        if ( pid == pcb[i].pid )
-            bitv[ i ] = 0;
+    for ( i = 0; i < NUMOFPCB; i++ ) {
+        if (pid == pcb[i].pid) {
+            bitv[i] = 0;
+            active--;
+            break;
+        }
     }
-    active--;
+
     //do something with stats
 
 }
 
-void sendMessage() {
+static void sendMessage() {
     int s = mq_send( mq, ( char * ) &slice, MAX_SIZE, 0 );
     if (s != 0)
         perror( "Parent - message didnt send" );
     fflush(stdout);
 }
 
-SimClock nextProcTime(){
+static SimClock nextProcTime(){
     int ss = maxTimeBetweenNewProcsSecs * secWorthNancSec + maxTimeBetweenNewProcsNS;
     SimClock x;
     int dx = ( rand() % ss ) ;
@@ -301,15 +328,15 @@ SimClock nextProcTime(){
     printf("OSS: process index %i may generate after %is %ins\n",total, x.sec, x.ns);
     return x;
 }
-void generateProc() {
+static void generateProc() {
     if ( ( pids[ total ] = fork() ) < 0)
         perror("error forking new process");
     if ( pids[ total ] == 0 )
         execl( path, user, NULL );
     int i,j;
     j=-1;
-    for(i=0; i< NUMOFPCB;i++) {
-        if (bitv[i] == 0) {
+    for( i = 0; i < NUMOFPCB; i++ ) {
+        if ( bitv[ i ] == 0 ) {
             j = i;
             bitv[ i ] = 1;
             break;
@@ -317,19 +344,19 @@ void generateProc() {
     }
     if(j >= 0){
         assignPCB( &pcb[ j ] );
-        assignToQueue(pcb[j].pid);
+        assignToQueue( pcb[ j ].pid );
         active++, total++;
     }
 }
-void sigNextProc(pid_t npid){
+static void sigNextProc(pid_t npid){
     if ( sigqueue( npid, SIGUSR1, ( union sigval ) 0 ) != 0 )
         perror( "sig not sent: " );
 }
 
 
-void checkWaitQueue(){
-   if ( ( queueCount.waitQLen - queueCount.waitQsi ) == 0)
-       return;
+static void checkWaitQueue(){
+    if ( ( queueCount.waitQLen - queueCount.waitQsi ) == 0)
+        return;
     int i ;
     for(i =0; i < NUMOFPCB;i++)
         if (queueArrays.waitQpids[i] > 0){
@@ -342,7 +369,7 @@ void checkWaitQueue(){
             }
         }
 }
-void assignToQueue(pid_t pid) {
+static void assignToQueue(pid_t pid) {
     int i, j;
     for (i = 0, j = -1; i < NUMOFPCB; i++) {
         if (pcb[i].pid == pid)

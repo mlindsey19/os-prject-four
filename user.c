@@ -12,8 +12,8 @@
 #include <memory.h>
 
 static void sighdl(int sig, siginfo_t *siginfo, void *context);
-void receiveMessage();
-void sendMessage();
+static void receiveMessage();
+static void sendMessage();
 
 ProcessControlBlock * pcb;
 mqd_t mq;
@@ -47,13 +47,14 @@ int main(int argc, char * argv[])
     if(sigaddset(&set, SIGUSR1) == -1) {
         perror("Sigaddset error");
     }
-    ex = 0;
-    while(!ex) {
+    ex = 1;
+    while(ex) {
         sigwait(&set, &sig);
         usleep(1000);
         receiveMessage();
         usleep(1000);
         sendMessage();
+        ex = 0;
     }
     pcb->sys_time_end.sec = simClock->sec;
     pcb->sys_time_end.ns = simClock->ns;
@@ -66,7 +67,7 @@ static void sighdl(int sig, siginfo_t *siginfo, void *context)
             (long)siginfo->si_pid, (long)siginfo->si_uid);
 }
 
-void receiveMessage() {
+static void receiveMessage() {
     ssize_t bytes_read;
 
     bytes_read = mq_receive(mq,( char * ) &slice, MAX_SIZE, 0);
@@ -87,7 +88,7 @@ static void amendPCB(int percent){
 
 }
 
-void sendMessage() {
+static void sendMessage() {
     int a,b,c,d;
     c = d = 0;
     a = rand() % 3;
