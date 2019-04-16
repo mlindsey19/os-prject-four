@@ -33,8 +33,8 @@ int main(int argc, char * argv[])
     pcb =  ( shmat ( shmidp, 0, 0));
 
 
-    mq_a = mq_open(QUEUE_A, O_RDWR, 0777);
-    mq_b = mq_open(QUEUE_B, O_RDWR, 0777);
+    mq_a = mq_open(QUEUE_A, O_RDWR | O_NONBLOCK, 0777);
+    mq_b = mq_open(QUEUE_B, O_RDWR| O_NONBLOCK, 0777);
     mq_getattr(mq_a, &attr_a);
     mq_getattr(mq_b, &attr_a);
 
