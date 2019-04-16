@@ -74,6 +74,7 @@ int main(int argc, char ** argv) {
     signal( SIGINT, sigHandle );
     signal( SIGALRM, sigHandle );
     signal( SIGSEGV, sigHandle );
+    signal(SIGUSR2, sigHandle );
     initQueCount();
     checkArgs( output, argc, argv, &processLimit, &activeLimit );
 
@@ -96,6 +97,10 @@ int main(int argc, char ** argv) {
     attr_b.mq_curmsgs = 0;
     mq_a = mq_open( QUEUE_A, O_CREAT | O_RDWR | O_NONBLOCK, 0777, &attr_a );
     mq_b = mq_open( QUEUE_B, O_CREAT | O_RDWR | O_NONBLOCK, 0777, &attr_b );
+    struct sigevent sigevent;
+    sigevent.sigev_notify = SIGEV_SIGNAL;
+    sigevent.sigev_signo = SIGUSR2;
+    mq_notify(mq_b, &sigevent);
 
     gentime = nextProcTime();
     goTime.sec = 0;
@@ -143,13 +148,12 @@ int main(int argc, char ** argv) {
 //        if ( simClock->sec > goTime.sec ||
 //             ( simClock->sec >= goTime.sec && simClock->ns >= goTime.ns ) ) {
 
-            pid_t npid ;
+        pid_t npid ;
         npid = getNext();
         if( npid > 0 ){
             sendMessage();
             sleep( 1 );
             sigNextProc( npid );
-            receiveMessage();
             k++;
         }
 
@@ -205,7 +209,10 @@ static void increment(){
 }
 
 static void sigHandle(int cc){
-    cleanSHM();
+    if(cc == SIGUSR2)
+        receiveMessage();
+    else
+        cleanSHM();
 }
 static void deleteMemory() {
     deleteClockMem(clockaddr);
