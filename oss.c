@@ -74,7 +74,20 @@ int main(int argc, char ** argv) {
     signal( SIGINT, sigHandle );
     signal( SIGALRM, sigHandle );
     signal( SIGSEGV, sigHandle );
-    signal(SIGCONT, sigHandle );
+    signal( SIGUSR1, sigHandle );
+    struct sigaction action;
+    memset (&action, 0, sizeof(action));
+    action.sa_sigaction = sigHandle;
+    action.sa_flags = SA_SIGINFO;
+    if (sigaction(SIGUSR1, &action, NULL) != 0) {
+        perror ( "sigaction" );
+        return 1;
+    }
+    sigset_t set;
+    int sig;
+    if(sigaddset(&set, SIGUSR1) == -1) {
+        perror("Sigaddset error");
+    }
     initQueCount();
     checkArgs( output, argc, argv, &processLimit, &activeLimit );
 
@@ -197,6 +210,7 @@ static void assignPCB(){
     pcb->sys_time_end.ns = 0;
     pcb->waitingTill.ns = 0;
     pcb->waitingTill.sec = 0;
+    pcb->run = 0;
 }
 
 static void increment(){
@@ -211,7 +225,7 @@ static void increment(){
 }
 
 static void sigHandle(int cc){
-    if(cc == SIGUSR2)
+    if(cc == SIGUSR1)
         receiveMessage();
     else
         cleanSHM();
@@ -369,6 +383,14 @@ static void sigNextProc(pid_t npid){
     printf("OSS: sending signal to %u\n", npid);
     if ( sigqueue( npid, SIGUSR1, ( union sigval ) 0 ) != 0 )
         perror( "sig not sent: " );
+    int k;
+    for (k = 0; k < NUMOFPCB; k++){
+        if(getpid() == pcb[ k ].pid ){
+            pcb[ k ].run = 1;
+            break;
+        }
+
+    }
 }
 
 static int getPCBindex(pid_t pid){

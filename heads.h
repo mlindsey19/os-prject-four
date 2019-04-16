@@ -25,6 +25,7 @@ typedef struct {
     SimClock sys_time_end;
     SimClock waitingTill;
     unsigned int last_burst_time;
+    int run;
 
 }ProcessControlBlock;
 #define BUFF_pcb sizeof( ProcessControlBlock ) * 18

@@ -16,12 +16,14 @@ static void receiveMessage();
 static void sendMessage();
 
 ProcessControlBlock * pcb;
+ProcessControlBlock * thisPcb;
 mqd_t mq_a,mq_b;
 SimClock * simClock;
 char buffer[MAX_SIZE];
 int slice;
 int ex;
 struct mq_attr attr_a, attr_b;
+
 
 int main(int argc, char * argv[])
 {
@@ -31,36 +33,31 @@ int main(int argc, char * argv[])
     int shmidp = shmget(SHMKEY_pcb, BUFF_pcb, 0777);
     simClock =  ( shmat ( shmidc, 0, 0));
     pcb =  ( shmat ( shmidp, 0, 0));
+    int k;
+    for (k=0; k< NUMOFPCB; k++){
+        if(getpid() == pcb[ k ].pid ) {
+            thisPcb = &pcb[k];
+            break;
+        }
+    }
 
 
-    mq_a = mq_open(QUEUE_A, O_RDWR | O_NONBLOCK, 0777);
+    mq_a = mq_open(QUEUE_A, O_RDWR , 0777);
     mq_b = mq_open(QUEUE_B, O_RDWR| O_NONBLOCK, 0777);
     mq_getattr(mq_a, &attr_a);
     mq_getattr(mq_b, &attr_b);
 
-
-    struct sigaction action;
-    memset (&action, 0, sizeof(action));
-    action.sa_sigaction = sighdl;
-    action.sa_flags = SA_SIGINFO;
-    if (sigaction(SIGUSR1, &action, NULL) != 0) {
-        perror ("sigaction");
-        return 1;
-    }
-    sigset_t set;
-    int sig;
-    if(sigaddset(&set, SIGUSR1) == -1) {
-        perror("Sigaddset error");
-    }
     ex = 1;
-    while(ex) {
-        sigwait(&set, &sig);
+    while(1) {
+        if (ex == 0) break;
+        while (thisPcb->run == 0);
+        thisPcb-> run =0;
         receiveMessage();
         usleep(1000);
         sendMessage();
     }
-    pcb->sys_time_end.sec = simClock->sec;
-    pcb->sys_time_end.ns = simClock->ns;
+    thisPcb->sys_time_end.sec = simClock->sec;
+    thisPcb->sys_time_end.ns = simClock->ns;
     printf("user pid %u -> BYE\n", getpid());
     exit(808);
 }
@@ -82,8 +79,8 @@ static void amendPCB(int percent){
     int timeUsed;
 
     timeUsed = ( 1 + percent ) * slice;
-    pcb->last_burst_time = timeUsed;
-    pcb->cpu_used.ns += timeUsed;
+    thisPcb->last_burst_time = timeUsed;
+    thisPcb->cpu_used.ns += timeUsed;
 
 }
 
@@ -112,8 +109,8 @@ static void sendMessage() {
         case 2:
             c = rand() % 5;
             d = rand() % 1000; // wait time
-            pcb->waitingTill.sec = c + simClock->sec;
-            pcb->waitingTill.ns = d + simClock->ns;
+            thisPcb->waitingTill.sec = c + simClock->sec;
+            thisPcb->waitingTill.ns = d + simClock->ns;
             break;
         case 3:
             c = rand() % 99 ; // percent of quantum used
