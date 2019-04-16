@@ -55,7 +55,6 @@ int main(int argc, char * argv[])
     ex = 1;
     while(ex) {
         sigwait(&set, &sig);
-        while(attr_a.mq_curmsgs == 0);
         receiveMessage();
         sendMessage();
         ex = 0 ;
