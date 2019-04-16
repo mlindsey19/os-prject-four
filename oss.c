@@ -95,7 +95,7 @@ int main(int argc, char ** argv) {
     attr_b.mq_msgsize = MAX_SIZE;
     attr_b.mq_curmsgs = 0;
     mq_a = mq_open(QUEUE_A, O_CREAT | O_RDWR, 0777, &attr_a);
-    mq_b = mq_open(QUEUE_B, O_CREAT | O_RDWR, 0777, &attr_b);
+    mq_b = mq_open(QUEUE_B, O_CREAT | O_RDWR | O_NONBLOCK, 0777, &attr_b);
 
     gentime = nextProcTime();
     goTime.sec = 0;
