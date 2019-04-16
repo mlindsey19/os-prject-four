@@ -115,7 +115,7 @@ static void sendMessage() {
     memset( buffer,0, sizeof( buffer ) );
     sprintf(buffer, " %d %d %d %d ", a, b, c, d);
     int s = mq_send( mq_b, buffer, MAX_SIZE, 0 );
-    printf("user: sending %s - %i\n", buffer, attr_b);
+    printf("user: sending %s - %i\n", buffer, attr_b.mq_curmsgs);
     if (s != 0){
         perror( "message didnt send" );
     }
