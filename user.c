@@ -54,6 +54,7 @@ int main(int argc, char * argv[])
     }
     ex = 1;
     while(ex) {
+        sleep(1);
         sigwait(&set, &sig);
         receiveMessage();
         sendMessage();
@@ -90,14 +91,23 @@ static void sendMessage() {
     srand( time( NULL ) ^ getpid() );
     int a,b,c,d;
     c = d = 0;
-    a = rand() % 3;
+    a = rand() % 9;
     b = getpid();
     switch ( a ){
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
         case 0:
+            a=0;
             ex = 0;
+            pcb->last_burst_time = 0;
             break;
         case 1:
             amendPCB(99);
+            d = slice;
             break;
         case 2:
             c = rand() % 5;

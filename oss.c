@@ -141,6 +141,7 @@ int main(int argc, char ** argv) {
     while(k<10000000){
         increment( simClock );
         mq_getattr(mq_b, &attr_b);
+        checkWaitQueue();
         if( attr_b.mq_curmsgs > 0 )
            receiveMessage();
 
@@ -148,8 +149,6 @@ int main(int argc, char ** argv) {
             generateProc();
             a++;
         }
-//        if ( simClock->sec > goTime.sec ||
-//             ( simClock->sec >= goTime.sec && simClock->ns >= goTime.ns ) ) {
 
         pid_t npid ;
         npid = getNext();
@@ -398,18 +397,18 @@ static void assignToQueue(pid_t pid) {
         return;
     }
 
-    if( pcb[j].priority == 0 ) {
+    if( pcb[ j ].priority == 0 ) {
         queueArrays.realQpids[ ( queueCount.realQsi + queueCount.realQLen++ ) % NUMOFPCB] = pid;
         printf("OSS: Put PID %u in queue 0\n", pid);
     }
     else{
-        if ( pcb[j].last_burst_time < ( 2 * QUANTUM ) ) {
+        if ( pcb[ j ].last_burst_time < ( 2 * QUANTUM ) ) {
             queueArrays.highQpids[ ( queueCount.highQsi + queueCount.highQLen++ ) % NUMOFPCB ] = pid;
             printf("OSS: Put PID %u in queue 1\n", pid);
-        }else if ( pcb[j].last_burst_time < ( 4 * QUANTUM ) ) {
+        }else if ( pcb[ j ].last_burst_time < ( 4 * QUANTUM ) ) {
             queueArrays.medQpids[ ( queueCount.medQsi + queueCount.medQLen++ ) % NUMOFPCB] = pid;
             printf("OSS: Put PID %u in queue 2\n", pid);
-        }else if ( pcb[j].last_burst_time < ( 8 * QUANTUM ) ) {
+        }else if ( pcb[ j ].last_burst_time < ( 8 * QUANTUM ) ) {
             queueArrays.lowQpids[ ( queueCount.lowQsi + queueCount.lowQLen++ ) % NUMOFPCB] = pid;
             printf("OSS: Put PID %u in queue 3\n", pid);
         }else {
