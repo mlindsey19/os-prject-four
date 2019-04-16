@@ -57,6 +57,8 @@ ProcessControlBlock * pcb;
 SimClock * simClock;
 SimClock goTime;
 
+struct mq_attr attr;
+
 pid_t pids[ PLIMIT ];
 int bitv[NUMOFPCB];
 mqd_t mq;
@@ -83,7 +85,7 @@ int main(int argc, char ** argv) {
     pcbpaddr = getPCBMem();
     pcb = ( ProcessControlBlock * ) pcbpaddr;
 
-    struct mq_attr attr;
+
     attr.mq_flags = 0;
     attr.mq_maxmsg = 10;
     attr.mq_msgsize = MAX_SIZE;
@@ -141,9 +143,8 @@ int main(int argc, char ** argv) {
              ( simClock->sec >= goTime.sec && simClock->ns >= goTime.ns ) ) {
             slice = QUANTUM;
             sendMessage();
-            usleep(100000);
             sigNextProc(getNext());
-            usleep(1000000);
+            while ( attr.mq_curmsgs == 0 );
             receiveMessage();
             k=0;
         }
@@ -237,6 +238,7 @@ static void sigChild() {
 }
 
 static void receiveMessage() {
+
     ssize_t bytes_read;
     char buffer[MAX_SIZE];
     memset( buffer,0, sizeof( buffer ) );
